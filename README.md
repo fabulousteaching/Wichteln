@@ -62,7 +62,7 @@ So läuft das Tool auf deinem Infomaniak-Webhosting mit Node.js, genau wie die I
 
 1. Infomaniak-Manager → **Web & Domains → dein Webhosting → Website hinzufügen** → Technologie **Node.js**.
 2. Webadresse: eine **Subdomain**, z. B. `wichteln.deinedomain.ch` (nicht die Hauptdomain, sonst wird deine Website ersetzt).
-3. **Bestehendes Projekt importieren** → ZIP hochladen. Die ZIP bekommst du auf GitHub unter *Code → Download ZIP* (oder du packst den Ordner des Tools selbst, dann aber **ohne `node_modules` und `data`**).
+3. **Bestehendes Projekt importieren** → ZIP hochladen. Wichtig: In der ZIP müssen `package.json`, `src` und `public` **direkt** liegen, nicht in einem Unterordner. Die ZIP von GitHub (*Code → Download ZIP*) enthält einen Ordner `Wichteln-main`: entpacken, diesen Ordner öffnen, alles darin markieren → „In ZIP-Datei komprimieren“ (ohne `node_modules` und `data`).
 4. **Build-Befehl:** `npm install` · **Ausführungsbefehl:** `npm start` · **Port:** `3000` → *Installation abschliessen*.
 5. SSL-Zertifikat (https) für die Subdomain aktivieren. Danach ist das Tool unter `https://wichteln.deinedomain.ch` erreichbar.
 
