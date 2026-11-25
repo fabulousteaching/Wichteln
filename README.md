@@ -38,10 +38,13 @@ Am Beamer sieht man nur, *dass* die Wichtel unterwegs sind, nie, wer für wen wi
 Voraussetzung: [Node.js](https://nodejs.org) **Version 22.13 oder neuer**.
 
 ```bash
-cd wichtel
+git clone https://github.com/fabulousteaching/Wichteln.git
+cd Wichteln
 npm install
 npm start
 ```
+
+(Ohne Git: auf GitHub *Code → Download ZIP*, entpacken und im entpackten Ordner `npm install` und `npm start` ausführen.)
 
 Im Fenster erscheinen zwei Adressen:
 
@@ -58,14 +61,14 @@ So läuft das Tool auf deinem Infomaniak-Webhosting mit Node.js, genau wie die I
 
 1. Infomaniak-Manager → **Web & Domains → dein Webhosting → Website hinzufügen** → Technologie **Node.js**.
 2. Webadresse: eine **Subdomain**, z. B. `wichteln.deinedomain.ch` (nicht die Hauptdomain, sonst wird deine Website ersetzt).
-3. **Bestehendes Projekt importieren** → ZIP hochladen. Die ZIP erstellst du so: den Ordner `wichtel` öffnen, alles **ausser `node_modules` und `data`** markieren → „In ZIP-Datei komprimieren“.
+3. **Bestehendes Projekt importieren** → ZIP hochladen. Die ZIP bekommst du auf GitHub unter *Code → Download ZIP* (oder du packst den Ordner des Tools selbst, dann aber **ohne `node_modules` und `data`**).
 4. **Build-Befehl:** `npm install` · **Ausführungsbefehl:** `npm start` · **Port:** `3000` → *Installation abschliessen*.
 5. SSL-Zertifikat (https) für die Subdomain aktivieren. Danach ist das Tool unter `https://wichteln.deinedomain.ch` erreichbar.
 
 **Aktualisieren:** Manager → deine Node.js-Website → **SSH-Konsole öffnen** und (Ordner ggf. anpassen):
 
 ```bash
-cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Instamatisierung/claude/wichtel-drawing-tool-uqunr4/wichtel/scripts/update.sh | bash
+cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash
 ```
 
 Danach im Manager auf **Neu starten** klicken. Die Wichtelrunden (Ordner `data`) bleiben erhalten.

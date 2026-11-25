@@ -4,14 +4,14 @@
 # Die Wichtelrunden (Ordner data) und die Einstellungen (.env) bleiben unverändert.
 #
 # Aufruf im Ordner des Tools, z. B. in der SSH-Konsole von Infomaniak:
-#   cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Instamatisierung/claude/wichtel-drawing-tool-uqunr4/wichtel/scripts/update.sh | bash
+#   cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash
 #
 # Danach das Tool neu starten (bei Infomaniak im Manager auf "Neu starten").
 
 set -euo pipefail
 
-REPO="fabulousteaching/Instamatisierung"
-BRANCH="${WICHTEL_BRANCH:-claude/wichtel-drawing-tool-uqunr4}"
+REPO="fabulousteaching/Wichteln"
+BRANCH="${WICHTEL_BRANCH:-main}"
 APP_DIR="$(pwd)"
 
 if [ ! -f "$APP_DIR/package.json" ] || ! grep -q '"name": "wichtel"' "$APP_DIR/package.json"; then
@@ -26,7 +26,7 @@ trap 'rm -rf "$TMP"' EXIT
 echo "→ Lade die neueste Version herunter …"
 curl -fsSL "https://codeload.github.com/$REPO/tar.gz/refs/heads/$BRANCH" | tar -xz -C "$TMP" --strip-components=1
 
-SRC="$TMP/wichtel"
+SRC="$TMP"
 if [ ! -f "$SRC/package.json" ] || [ ! -d "$SRC/src" ]; then
   echo "✗ Download unvollständig – nichts wurde verändert."
   exit 1
