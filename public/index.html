@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1230">
+  <title>Wichteln – die magische Wichtel-Auslosung für deine Klasse</title>
+  <meta name="description" content="Kinder schreiben ihren Wunschzettel auf dem Tablet, die Lehrperson schickt am Beamer die Wichtel los.">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/wichtel.css">
+</head>
+<body class="home-page">
+  <div class="sky-stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="ground home-ground" id="ground"></div>
+  <canvas class="snow-canvas" id="snow"></canvas>
+  <div class="garland" id="garland"></div>
+
+  <main class="home">
+    <header class="home-hero">
+      <h1 class="festive-title">Wichteln</h1>
+      <p>Die Kinder schreiben ihren Wunschzettel auf dem Tablet – und am Beamer bringen die Wichtel jedem Kind seinen geheimen Zettel. ✨</p>
+      <div class="hero-elves" id="heroElves"></div>
+    </header>
+
+    <div class="home-grid">
+      <section class="card card-candy">
+        <h2>🎄 Neue Wichtelrunde</h2>
+        <form id="createForm" autocomplete="off">
+          <label class="field"><span>Name der Klasse</span>
+            <input class="input" id="title" maxlength="60" placeholder="z. B. Klasse 4b" required></label>
+          <label class="field"><span>Namen der Kinder <small>Ein Name pro Zeile (du kannst eine Liste einfügen). Bei gleichen Vornamen bitte z. B. „Lena M.“ und „Lena S.“ schreiben.</small></span>
+            <textarea class="textarea" id="names" rows="9" placeholder="Lena&#10;Max&#10;Aylin&#10;Noah&#10;…"></textarea>
+            <small class="name-count" id="nameCount"></small></label>
+          <label class="field"><span>Hinweis für alle <small>Optional – steht auf jedem Wichtelzettel</small></span>
+            <input class="input" id="hint" maxlength="240" placeholder="z. B. Wichteltag: Freitag, 18. Dezember · Geschenk für max. 5 Franken"></label>
+          <label class="field" id="pwField" hidden><span>Passwort</span>
+            <input class="input" id="password" type="password" autocomplete="current-password"></label>
+          <button type="submit" class="btn btn-primary" id="createBtn">✨ Wichtelrunde erstellen</button>
+        </form>
+      </section>
+
+      <div class="stack">
+        <section class="card" id="myRounds" hidden>
+          <h2>🎁 Deine Wichtelrunden</h2>
+          <ul class="rounds-list" id="roundsList"></ul>
+        </section>
+
+        <section class="card">
+          <h2>🧒 Für Kinder</h2>
+          <p style="margin-top:0">Scanne den QR-Code an der Wandtafel – oder gib hier den Code ein:</p>
+          <form class="kid-code-form" id="kidForm">
+            <input class="input" id="kidCode" maxlength="8" placeholder="CODE" aria-label="Code" autocapitalize="characters">
+            <button type="submit" class="btn btn-green">Los!</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>📖 So funktioniert's</h2>
+          <ol class="steps">
+            <li><span class="num">1</span><span>Wichtelrunde erstellen und die Seite am <b>Beamer</b> zeigen.</span></li>
+            <li><span class="num">2</span><span>Die Kinder <b>scannen den QR-Code</b>, tippen auf ihren Namen und schreiben ihren Wunschzettel.</span></li>
+            <li><span class="num">3</span><span>Fertige Zettel werden eingepackt und landen als <b>Geschenk unter dem Wichtelbaum</b>.</span></li>
+            <li><span class="num">4</span><span>Alle fertig? <b>„Wichtel losschicken“</b> drücken: Die Wichtel holen die Zettel ab und bringen jedem Kind geheim, für wen es wichtelt.</span></li>
+          </ol>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="/js/home.js"></script>
+</body>
+</html>

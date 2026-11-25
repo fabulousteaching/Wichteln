@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a1230">
+  <title>Wichteln</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="stylesheet" href="/css/wichtel.css">
+</head>
+<body class="kid">
+  <div class="sky-stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="ground kid-ground" id="ground"></div>
+  <canvas class="snow-canvas" id="snow"></canvas>
+  <div class="garland" id="garland"></div>
+
+  <div class="kid-switch" id="switchBox" hidden>
+    <button type="button" class="btn btn-ghost" id="switchBtn">Nicht du? Name wechseln</button>
+  </div>
+
+  <main class="kid-main" id="main">
+    <header class="kid-header">
+      <h1 class="festive-title">Wichteln</h1>
+      <div class="subtitle" id="classTitle"></div>
+    </header>
+
+    <!-- 1. Namen wählen -->
+    <section id="screenNames" hidden>
+      <p class="kid-lead">Hallo! 👋 Tippe auf deinen Namen.</p>
+      <div class="tags" id="tags"></div>
+    </section>
+
+    <!-- 2. Wunschzettel schreiben -->
+    <section id="screenNote" hidden>
+      <p class="kid-lead" id="noteLead"></p>
+      <div class="scroll-area">
+        <div class="scroll" id="noteScroll">
+          <div class="scroll-roll top"></div>
+          <div class="scroll-sheet-wrap">
+            <div class="scroll-sheet">
+              <div class="scroll-holly left" data-holly></div>
+              <div class="scroll-holly right" data-holly></div>
+              <h2 class="note-title">Mein Wunschzettel</h2>
+              <p class="note-from" id="noteFrom"></p>
+              <label class="note-label" for="wishes"><span class="emoji">🎁</span> Das wünsche ich mir:</label>
+              <textarea class="lined" id="wishes" maxlength="800" placeholder="Schreib jeden Wunsch auf eine eigene Zeile …" autocomplete="off" spellcheck="true"></textarea>
+              <div class="note-counter" id="wishesCount"></div>
+              <label class="note-label" for="nogos"><span class="emoji">🙈</span> Darüber würde ich mich gar nicht freuen:</label>
+              <textarea class="lined" id="nogos" maxlength="800" placeholder="z. B. Nüsse (Allergie!), Haarspangen …" autocomplete="off" spellcheck="true"></textarea>
+              <div class="note-counter" id="nogosCount"></div>
+              <div class="note-actions">
+                <button type="button" class="btn btn-primary" id="doneBtn">Fertig! Zettel einrollen 🎀</button>
+              </div>
+              <div class="save-state" id="saveState"></div>
+            </div>
+          </div>
+          <div class="scroll-roll bottom"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Einpacken (Animation) -->
+    <section id="screenPack" hidden>
+      <p class="kid-lead" id="packLead">&nbsp;</p>
+      <div class="pack-stage" id="packStage">
+        <div class="pack-bundle" id="packBundle">
+          <div class="pack-roll">
+            <div class="scroll-roll r1"></div>
+            <div class="scroll-roll r2"></div>
+          </div>
+          <div class="pack-ribbon" id="packRibbon"></div>
+          <div class="pack-bow" id="packBow"></div>
+        </div>
+        <div class="pack-box" id="packBox">
+          <div class="gift-body" id="packBody"></div>
+          <div class="gift-lid" id="packLid"></div>
+          <div class="name-tag" id="packTag" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Warten -->
+    <section id="screenWait" hidden>
+      <div class="card wait-card" id="waitCard"></div>
+    </section>
+
+    <!-- 4. Zettel vom Wichtel -->
+    <section id="screenReveal" hidden>
+      <div class="scroll-area">
+        <div class="scroll" id="revealScroll">
+          <div class="scroll-roll top"></div>
+          <div class="scroll-sheet-wrap">
+            <div class="scroll-sheet" id="revealSheet"></div>
+          </div>
+          <div class="scroll-roll bottom"></div>
+        </div>
+        <div class="reveal-actions" id="revealActions" hidden>
+          <button type="button" class="btn btn-green" id="saveBtn">📷 Als Bild speichern</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenError" hidden>
+      <div class="card error-card">
+        <h2 id="errTitle">Hoppla!</h2>
+        <p id="errText"></p>
+        <p><a class="btn btn-primary" href="/">Zur Startseite</a></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="arrival" id="arrival" hidden></div>
+
+  <script type="module" src="/js/kid.js"></script>
+</body>
+</html>

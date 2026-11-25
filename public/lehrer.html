@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Wichteln – Lehrperson</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/wichtel.css">
+</head>
+<body class="teacher">
+  <div class="sky-stars" id="stars"></div>
+  <div class="moon"></div>
+  <div class="ground" id="ground"></div>
+
+  <main class="stage" id="stage" hidden>
+    <section class="qr-card card card-candy" id="qrCard">
+      <h3>Scanne mich! 📱</h3>
+      <img id="qrImg" alt="QR-Code zur Wichtel-Seite" width="230" height="230">
+      <div class="qr-url" id="qrUrl"></div>
+      <div class="qr-hint">oder Code eingeben:</div>
+      <div class="qr-code" id="qrCode"></div>
+    </section>
+
+    <header class="stage-title">
+      <h1 class="festive-title">Wichteln</h1>
+      <div class="subtitle" id="classTitle"></div>
+    </header>
+
+    <div class="stage-tree" id="tree"></div>
+
+    <section class="status" id="status">
+      <div class="status-text" id="statusText"></div>
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+      <button type="button" class="btn btn-primary go-button" id="goButton">🎅 Wichtel losschicken!</button>
+    </section>
+
+    <div class="stage-message" id="stageMessage" hidden></div>
+
+    <div class="slots" id="slots"></div>
+  </main>
+
+  <div class="kid-main" id="errorView" hidden>
+    <div class="card error-card">
+      <h2 id="errorTitle">Lehrer-Link fehlt</h2>
+      <p id="errorText"></p>
+      <p><a class="btn btn-primary" href="/">Zur Startseite</a></p>
+    </div>
+  </div>
+
+  <canvas class="snow-canvas" id="snow"></canvas>
+  <div class="garland" id="garland"></div>
+
+  <nav class="toolbar" id="toolbar" hidden>
+    <button type="button" class="tool" id="soundBtn" title="Ton an/aus">🔊</button>
+    <button type="button" class="tool" id="fullBtn" title="Vollbild">⛶</button>
+    <button type="button" class="tool" id="adminBtn" title="Verwaltung">⚙️</button>
+  </nav>
+
+  <script type="module" src="/js/teacher.js"></script>
+</body>
+</html>
