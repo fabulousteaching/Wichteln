@@ -5,8 +5,9 @@ DirectoryIndex index.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  # Interne Ordner nie ausliefern
+  # Interne Ordner und Dateien nie ausliefern
   RewriteRule ^(lib|data)(/|$) - [F,L]
+  RewriteRule ^\.ftp-deploy-sync-state\.json$ - [F,L]
   # Seiten für Lehrperson und Kinder
   RewriteRule ^lehrer/[A-Za-z0-9]+/?$ lehrer.html [L]
   RewriteRule ^k/[A-Za-z0-9]+/?$ kind.html [L]
