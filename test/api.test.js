@@ -228,6 +228,85 @@ test('Lehrperson verwaltet Kinder: hinzufügen, umbenennen, freigeben, entfernen
   assert.equal((await call('GET', `/api/rounds/${code}/kids`)).status, 404);
 });
 
+test('Abwesende Kinder: Auslosung ohne sie, Wünsche durch die Lehrperson, Zettel abrufbar', async (t) => {
+  const { call } = await startServer(t);
+  const { code, admin } = await createRound(call, ['Lena', 'Max', 'Aylin', 'Noah']);
+  const kids = (await call('GET', `/api/rounds/${code}/kids`)).data.children;
+  const [lena, max, aylin, noah] = kids;
+
+  // Drei Kinder sind da und werden fertig, Noah fehlt
+  for (const kid of [lena, max, aylin]) {
+    const token = (await call('POST', `/api/rounds/${code}/kids/${kid.id}/claim`, { body: {} })).data.token;
+    await call('POST', `/api/rounds/${code}/kids/${kid.id}/done`, { headers: { 'x-device-token': token }, body: { wishes: 'Lego', nogos: '' } });
+  }
+  let res = await call('POST', `/api/rounds/${code}/admin/draw`, { headers: admin, body: {} });
+  assert.equal(res.status, 409);
+  assert.deepEqual(res.data.missing, ['Noah']);
+
+  // Wünsche bearbeiten geht nur bei abwesenden Kindern
+  res = await call('PUT', `/api/rounds/${code}/admin/children/${noah.id}/note`, { headers: admin, body: { wishes: 'x', nogos: '' } });
+  assert.equal(res.status, 409);
+  assert.equal((await call('PUT', `/api/rounds/${code}/admin/children/${lena.id}/note`, { headers: admin, body: { wishes: 'x', nogos: '' } })).status, 409);
+
+  // Als abwesend markieren: nur mit Lehrer-Token
+  assert.equal((await call('POST', `/api/rounds/${code}/admin/children/${noah.id}/absent`, { body: { absent: true } })).status, 403);
+  res = await call('POST', `/api/rounds/${code}/admin/children/${noah.id}/absent`, { headers: admin, body: { absent: true } });
+  assert.equal(res.status, 200);
+  const noahState = () => res.data.children.find((c) => c.id === noah.id);
+  assert.equal(noahState().absent, true);
+  assert.equal(noahState().done, false);
+  assert.equal((await call('GET', `/api/rounds/${code}/kids`)).data.children.find((c) => c.id === noah.id).absent, true);
+
+  // Lehrperson trägt die Wünsche ein und kann sie wieder lesen und ändern
+  res = await call('PUT', `/api/rounds/${code}/admin/children/${noah.id}/note`, { headers: admin, body: { wishes: 'Fussball\nComic', nogos: 'Socken' } });
+  assert.equal(res.status, 200);
+  assert.equal(noahState().has_note, true);
+  assert.equal(noahState().done, true);
+  const note = await call('GET', `/api/rounds/${code}/admin/children/${noah.id}/note`, { headers: admin });
+  assert.deepEqual([note.data.wishes, note.data.nogos], ['Fussball\nComic', 'Socken']);
+
+  // Jetzt geht die Auslosung ohne "force", und auch für Noah liegt ein Geschenk bereit
+  res = await call('POST', `/api/rounds/${code}/admin/draw`, { headers: admin, body: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.data.round.parade.count, 4);
+
+  // Zuteilung: Noah wichtelt für jemanden, und wer für Noah wichtelt, sieht die Wünsche der Lehrperson
+  const pairs = (await call('GET', `/api/rounds/${code}/admin/pairs`, { headers: admin })).data;
+  const noahPair = pairs.find((p) => p.giver.id === noah.id);
+  assert.equal(noahPair.giver.absent, true);
+  assert.ok(noahPair.giftee.name);
+  assert.equal(pairs.find((p) => p.giftee.id === noah.id).giftee.wishes, 'Fussball\nComic');
+
+  // Wünsche lassen sich auch nach der Auslosung noch anpassen
+  res = await call('PUT', `/api/rounds/${code}/admin/children/${noah.id}/note`, { headers: admin, body: { wishes: 'Fussball', nogos: '' } });
+  assert.equal(res.status, 200);
+  const after = (await call('GET', `/api/rounds/${code}/admin/pairs`, { headers: admin })).data;
+  assert.equal(after.find((p) => p.giftee.id === noah.id).giftee.wishes, 'Fussball');
+
+  // Kommt Noah doch und tippt seinen Namen an, gilt er wieder als anwesend
+  assert.equal((await call('POST', `/api/rounds/${code}/kids/${noah.id}/claim`, { body: {} })).status, 200);
+  res = await call('GET', `/api/rounds/${code}/admin`, { headers: admin });
+  assert.equal(noahState().absent, false);
+});
+
+test('Abwesend ohne Wünsche: Auslosung läuft trotzdem, Markierung lässt sich zurücknehmen', async (t) => {
+  const { call } = await startServer(t);
+  const { code, admin } = await createRound(call, ['Lena', 'Max', 'Aylin']);
+  const kids = (await call('GET', `/api/rounds/${code}/kids`)).data.children;
+  for (const kid of kids) {
+    assert.equal((await call('POST', `/api/rounds/${code}/admin/children/${kid.id}/absent`, { headers: admin, body: { absent: true } })).status, 200);
+  }
+  let res = await call('POST', `/api/rounds/${code}/admin/children/${kids[0].id}/absent`, { headers: admin, body: { absent: false } });
+  assert.equal(res.data.children[0].absent, false);
+  res = await call('POST', `/api/rounds/${code}/admin/draw`, { headers: admin, body: {} });
+  assert.equal(res.status, 409);
+  assert.deepEqual(res.data.missing, ['Lena']);
+  await call('POST', `/api/rounds/${code}/admin/children/${kids[0].id}/absent`, { headers: admin, body: { absent: true } });
+  res = await call('POST', `/api/rounds/${code}/admin/draw`, { headers: admin, body: {} });
+  assert.equal(res.status, 200);
+  assert.equal(res.data.round.parade.count, 3);
+});
+
 test('Optionales Lehrer-Passwort zum Anlegen neuer Runden', async (t) => {
   const { call } = await startServer(t, { TEACHER_PASSWORD: 'geheim' });
   assert.equal((await call('GET', '/api/config')).data.password_required, true);

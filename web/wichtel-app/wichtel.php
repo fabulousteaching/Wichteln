@@ -335,6 +335,7 @@ function admin_state(array $round): array
             'name' => $c['name'],
             'claimed' => (bool) $c['device_hash'],
             'done' => (bool) $c['done_at'],
+            'absent' => !empty($c['absent']),
             'has_note' => $c['wishes'] !== '' || $c['nogos'] !== '',
             'revealed' => (bool) $c['revealed_at'],
         ], sorted_children($round)),
@@ -370,17 +371,24 @@ function kid_state(array $round, array $child): array
             'wishes' => $child['wishes'],
             'nogos' => $child['nogos'],
             'done' => (bool) $child['done_at'],
+            'absent' => !empty($child['absent']),
             'revealed' => (bool) $child['revealed_at'],
         ],
         'reveal' => reveal_info($round, $child),
     ];
 }
 
+/** Bereit für die Auslosung: Zettel eingepackt oder von der Lehrperson als abwesend markiert. */
+function is_ready(array $child): bool
+{
+    return (bool) $child['done_at'] || !empty($child['absent']);
+}
+
 function new_child(int $id, string $name, int $position): array
 {
     return [
         'id' => $id, 'name' => $name, 'position' => $position, 'device_hash' => null, 'claimed_at' => null,
-        'wishes' => '', 'nogos' => '', 'done_at' => null, 'giftee_id' => null, 'reveal_delay' => 0,
+        'wishes' => '', 'nogos' => '', 'done_at' => null, 'absent' => false, 'giftee_id' => null, 'reveal_delay' => 0,
         'revealed_at' => null, 'updated_at' => now_ms(),
     ];
 }
@@ -518,7 +526,7 @@ function handle_api(string $method, string $path, array $body): array
             return [200, admin_state($round)];
         }
 
-        if (preg_match('#^/children/(\d+)(?:/(release|reopen))?$#', $sub, $cm)) {
+        if (preg_match('#^/children/(\d+)(?:/(release|reopen|absent|note))?$#', $sub, $cm)) {
             $id = (int) $cm[1];
             $action = $cm[2] ?? '';
             if ($action === '' && $method === 'PATCH') {
@@ -550,6 +558,34 @@ function handle_api(string $method, string $path, array $body): array
                 });
                 return [200, admin_state($round)];
             }
+            // Krank oder nicht da: Das Kind blockiert die Auslosung nicht, die Lehrperson betreut seinen Zettel.
+            if ($action === 'absent' && $method === 'POST') {
+                [$round] = mutate_round($code, function (array &$round) use ($id, $body) {
+                    $child = &find_child($round, $id);
+                    $child['absent'] = !empty($body['absent']);
+                    $child['updated_at'] = now_ms();
+                });
+                return [200, admin_state($round)];
+            }
+            if ($action === 'note' && $method === 'GET') {
+                $round = load_round($code);
+                $child = find_child($round, $id);
+                if (empty($child['absent'])) throw new HttpError(409, 'Nur bei abwesenden Kindern kann die Lehrperson den Wunschzettel bearbeiten.');
+                return [200, ['id' => $child['id'], 'name' => $child['name'], 'wishes' => $child['wishes'], 'nogos' => $child['nogos']]];
+            }
+            if ($action === 'note' && $method === 'PUT') {
+                [$round] = mutate_round($code, function (array &$round) use ($id, $body) {
+                    $child = &find_child($round, $id);
+                    if (empty($child['absent'])) throw new HttpError(409, 'Nur bei abwesenden Kindern kann die Lehrperson den Wunschzettel bearbeiten.');
+                    $note = read_note($body);
+                    $child['wishes'] = $note['wishes'];
+                    $child['nogos'] = $note['nogos'];
+                    // Gilt damit als eingepackt (auch wenn das Kind später wieder da ist)
+                    if (!$child['done_at'] && ($note['wishes'] !== '' || $note['nogos'] !== '')) $child['done_at'] = now_ms();
+                    $child['updated_at'] = now_ms();
+                });
+                return [200, admin_state($round)];
+            }
             if ($action === 'reopen' && $method === 'POST') {
                 [$round] = mutate_round($code, function (array &$round) use ($id) {
                     $child = &find_child($round, $id);
@@ -568,12 +604,12 @@ function handle_api(string $method, string $path, array $body): array
                 if (count($children) < MIN_CHILDREN) {
                     throw new HttpError(400, 'Für die Auslosung braucht es mindestens ' . MIN_CHILDREN . ' Kinder.');
                 }
-                $notDone = array_values(array_map(fn($c) => $c['name'], array_filter($children, fn($c) => !$c['done_at'])));
+                $notDone = array_values(array_map(fn($c) => $c['name'], array_filter($children, fn($c) => !is_ready($c))));
                 if ($notDone && empty($body['force'])) {
                     throw new HttpError(409, 'Noch nicht alle Zettel sind fertig.', ['missing' => $notDone]);
                 }
                 $circle = draw_circle(array_map(fn($c) => $c['id'], $children));
-                $giftIds = array_values(array_map(fn($c) => $c['id'], array_filter($children, fn($c) => (bool) $c['done_at'])));
+                $giftIds = array_values(array_map(fn($c) => $c['id'], array_filter($children, fn($c) => is_ready($c))));
                 $now = now_ms();
                 foreach ($round['children'] as &$child) {
                     $child['giftee_id'] = $circle[$child['id']];
@@ -610,7 +646,7 @@ function handle_api(string $method, string $path, array $body): array
             return [200, array_map(function ($c) use ($byId) {
                 $g = $byId[$c['giftee_id']] ?? null;
                 return [
-                    'giver' => ['id' => $c['id'], 'name' => $c['name']],
+                    'giver' => ['id' => $c['id'], 'name' => $c['name'], 'absent' => !empty($c['absent'])],
                     'giftee' => $g ? ['id' => $g['id'], 'name' => $g['name'], 'wishes' => $g['wishes'], 'nogos' => $g['nogos']] : null,
                 ];
             }, sorted_children($round))];
@@ -626,6 +662,7 @@ function handle_api(string $method, string $path, array $body): array
             'round' => ['code' => $round['code'], 'title' => $round['title'], 'drawn' => (bool) $round['drawn_at']],
             'children' => array_map(fn($c) => [
                 'id' => $c['id'], 'name' => $c['name'], 'taken' => (bool) $c['device_hash'], 'done' => (bool) $c['done_at'],
+                'absent' => !empty($c['absent']),
             ], sorted_children($round)),
         ]];
     }
@@ -645,6 +682,7 @@ function handle_api(string $method, string $path, array $body): array
                 $token = random_token();
                 $child['device_hash'] = hash_token($token);
                 $child['claimed_at'] = now_ms();
+                $child['absent'] = false; // wer seinen Namen antippt, ist offensichtlich da
                 $child['updated_at'] = now_ms();
                 return $token;
             });

@@ -116,6 +116,11 @@ async function init() {
   }, { intervalMs: 2000 });
 
   $('#goButton').addEventListener('click', onGo);
+  $('#stageMessage').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-open-absent]')) return;
+    openDrawer();
+    drawerEl?.querySelector('#absentSection')?.scrollIntoView({ block: 'center' });
+  });
 }
 
 async function refresh() {
@@ -148,9 +153,12 @@ function setupQr() {
 // Darstellung
 // ---------------------------------------------------------------------------
 
+/** Bereit für die Auslosung: Zettel eingepackt oder als abwesend markiert */
+const isReady = (child) => child.done || child.absent;
+
 function statusOf(child) {
   if (state.round.drawn_at) return child.revealed ? 'revealed' : 'drawn';
-  if (child.done) return 'done';
+  if (isReady(child)) return 'done';
   if (child.claimed) return 'writing';
   return 'open';
 }
@@ -213,7 +221,7 @@ function buildSlots() {
       <div class="slot-inner" style="--s:${pos.s}">
         <div class="ground-shadow"></div>
         <div class="stick"></div>
-        <div class="sign"><span class="sign-name"></span><span class="sign-status"></span></div>
+        <div class="sign"><span class="sign-name"></span><span class="sign-status"></span><span class="sign-absent" title="abwesend">🤒</span></div>
         <div class="slot-gift" hidden>${giftSvg(child.id)}</div>
       </div>`;
     slotsEl.appendChild(el);
@@ -266,6 +274,7 @@ function render({ initial = false } = {}) {
   for (const child of children) {
     const slot = slots.get(child.id);
     slot.el.querySelector('.sign-name').textContent = child.name;
+    slot.el.classList.toggle('is-absent', !!child.absent);
     const status = statusOf(child);
     // Nur echte Änderungen animieren (z. B. ein Geschenk, das gerade eingepackt wurde)
     const before = knownStatus.get(child.id);
@@ -275,7 +284,9 @@ function render({ initial = false } = {}) {
   }
 
   const total = children.length;
-  const done = children.filter((c) => c.done).length;
+  const done = children.filter(isReady).length;
+  const absent = children.filter((c) => c.absent).length;
+  const absentNote = absent ? ` · ${absent} abwesend` : '';
   const allDone = total >= state.min_children && done === total;
 
   if (round.drawn_at) {
@@ -290,8 +301,8 @@ function render({ initial = false } = {}) {
       total === 0
         ? 'Noch keine Kinder – über ⚙️ hinzufügen'
         : allDone
-          ? `Alle ${total} Wunschzettel sind eingepackt! 🎉`
-          : `${done} von ${total} Wunschzetteln sind eingepackt`;
+          ? `Alle ${total} Wunschzettel sind bereit! 🎉${absentNote}`
+          : `${done} von ${total} Wunschzetteln sind eingepackt${absentNote}`;
     $('#progressBar').style.width = total ? `${(done / total) * 100}%` : '0';
     const btn = $('#goButton');
     btn.classList.toggle('ready', allDone);
@@ -303,39 +314,118 @@ function render({ initial = false } = {}) {
 }
 
 function showFinalMessage() {
-  const total = state.children.length;
-  const opened = state.children.filter((c) => c.revealed).length;
-  const msg = $('#stageMessage');
-  const html =
-    opened === total
+  const present = state.children.filter((c) => !c.absent);
+  const absent = state.children.length - present.length;
+  const opened = present.filter((c) => c.revealed).length;
+  let html =
+    opened === present.length
       ? `Alle haben ihren Wichtelzettel! 🎉<small>Psst … nicht verraten, für wen ihr wichtelt! 🤫</small>`
-      : `Die Wichtel sind bei euren Tablets! 📲<small>${opened} von ${total} Zetteln sind schon geöffnet</small>`;
-  if (msg.innerHTML !== html) msg.innerHTML = html;
+      : `Die Wichtel sind bei euren Tablets! 📲<small>${opened} von ${present.length} Zetteln sind schon geöffnet</small>`;
+  if (absent) {
+    html += `<button type="button" class="btn btn-gold stage-absent-btn" data-open-absent>🤒 ${absent === 1 ? 'Zettel für 1 abwesendes Kind' : `Zettel für ${absent} abwesende Kinder`} herunterladen</button>`;
+  }
+  setStageMessage(html);
+}
+
+/** Text in der Mitte der Bühne; schreibt nur neu, wenn sich etwas geändert hat (schont Animationen und Knöpfe). */
+let stageMessageHtml = null;
+function setStageMessage(html) {
+  const msg = $('#stageMessage');
+  if (stageMessageHtml !== html) {
+    stageMessageHtml = html;
+    msg.innerHTML = html;
+  }
   msg.hidden = false;
+  return msg;
 }
 
 // ---------------------------------------------------------------------------
 // Auslosung + Wichtel-Parade
 // ---------------------------------------------------------------------------
 
+/** Fragt, welche der noch fehlenden Kinder heute abwesend sind. @returns {Promise<number[]|null>} null = abbrechen */
+async function askAbsent(missing) {
+  const id = `absent-${Math.random().toString(36).slice(2)}`;
+  const promise = ask({
+    title: 'Noch nicht alle sind fertig',
+    html: `<p class="modal-text">Diese Kinder haben ihren Zettel noch nicht eingepackt. <b>Wer fehlt heute</b> (krank oder nicht da)? Hake die Kinder an.</p>
+      <div class="absent-list" id="${id}">${missing
+        .map((c) => `<label class="absent-item"><input type="checkbox" value="${c.id}"><span>${esc(c.name)}</span><em>🤒 fehlt heute</em></label>`)
+        .join('')}</div>
+      <p class="modal-text" style="font-size:.92rem;opacity:.8">Für abwesende Kinder kannst du die Wünsche gleich selbst eintragen. Nach der Auslosung bekommst du ihren Wichtelzettel als Bild zum Weitergeben.</p>`,
+    ok: 'Weiter',
+    cancel: 'Noch warten',
+  });
+  const box = document.getElementById(id);
+  const ok = await promise;
+  if (!ok) return null;
+  return [...box.querySelectorAll('input:checked')].map((el) => Number(el.value));
+}
+
+/** Wunschzettel eines abwesenden Kindes bearbeiten. @returns {Promise<boolean>} gespeichert? */
+async function editNote(child, { skippable = false } = {}) {
+  let note;
+  try {
+    note = await api('GET', `/api/rounds/${code}/admin/children/${child.id}/note`, { headers: { 'X-Admin-Token': token } });
+  } catch (err) {
+    toast(err.message, { type: 'error', ms: 5000 });
+    return false;
+  }
+  const id = `note-${Math.random().toString(36).slice(2)}`;
+  const name = esc(child.name);
+  const promise = ask({
+    title: `Wunschzettel für ${child.name}`,
+    wide: true,
+    html: `<p class="modal-text">${name} ist abwesend. Trage hier ein, was du über die Wünsche weisst (ein Wunsch pro Zeile). Du kannst das später noch ändern.</p>
+      <label class="field"><span>🎁 Das wünscht sich ${name}</span>
+        <textarea class="textarea" id="${id}w" maxlength="800" style="min-height:6.5em" placeholder="z. B. Schokolade&#10;Stifte">${esc(note.wishes)}</textarea></label>
+      <label class="field"><span>🙈 Darüber würde sich ${name} gar nicht freuen</span>
+        <textarea class="textarea" id="${id}n" maxlength="800" style="min-height:4.5em" placeholder="z. B. Nüsse (Allergie!)">${esc(note.nogos)}</textarea></label>`,
+    ok: 'Speichern',
+    cancel: skippable ? 'Überspringen' : 'Abbrechen',
+  });
+  const w = document.getElementById(`${id}w`);
+  const n = document.getElementById(`${id}n`);
+  setTimeout(() => w?.focus(), 90);
+  if (!(await promise)) return false;
+  const saved = await adminCall('PUT', `/children/${child.id}/note`, { wishes: w.value, nogos: n.value });
+  if (saved) toast(`Wunschzettel für ${child.name} gespeichert ✓`);
+  return saved;
+}
+
 async function onGo() {
   sound.unlock();
-  const missing = state.children.filter((c) => !c.done);
   if (state.children.length < state.min_children) {
     toast(`Für die Auslosung braucht es mindestens ${state.min_children} Kinder.`, { type: 'error' });
     return;
   }
   let force = false;
+  let missing = state.children.filter((c) => !isReady(c));
   if (missing.length) {
-    const names = missing.map((c) => c.name).join(', ');
-    const ok = await ask({
-      title: 'Noch nicht alle sind fertig',
-      text: `Diese Kinder haben ihren Zettel noch nicht eingepackt: ${names}. Trotzdem jetzt auslosen? (Sie können ihren Wunschzettel danach noch schreiben.)`,
-      ok: 'Trotzdem losschicken',
-      cancel: 'Noch warten',
-    });
-    if (!ok) return;
-    force = true;
+    // 1. Wer fehlt heute? Diese Kinder blockieren die Auslosung nicht.
+    const absentIds = await askAbsent(missing);
+    if (absentIds === null) return;
+    for (const id of absentIds) {
+      if (!(await adminCall('POST', `/children/${id}/absent`, { absent: true }))) return;
+    }
+    // 2. Wünsche für die Abwesenden gleich eintragen (freiwillig)
+    for (const id of absentIds) {
+      const child = state.children.find((c) => c.id === id);
+      if (child && !child.has_note) await editNote(child, { skippable: true });
+    }
+    // 3. Ist sonst noch jemand nicht fertig?
+    missing = state.children.filter((c) => !isReady(c));
+    if (missing.length) {
+      const names = missing.map((c) => c.name).join(', ');
+      const ok = await ask({
+        title: 'Trotzdem losschicken?',
+        text: `Noch nicht fertig: ${names}. Wenn du jetzt auslost, können sie ihren Wunschzettel danach noch fertig schreiben und bekommen dann ihren Wichtel.`,
+        ok: 'Trotzdem losschicken',
+        cancel: 'Noch warten',
+      });
+      if (!ok) return;
+      force = true;
+    }
   }
   const btn = $('#goButton');
   btn.disabled = true;
@@ -422,7 +512,7 @@ async function runParade() {
   const timing = round.parade || { lead: 900, stagger: 400, cycle: 6500, total: 9000, gift_ids: [] };
   $('#status').hidden = true;
   const msg = $('#stageMessage');
-  msg.innerHTML = 'Die Wichtel kommen! 🎅';
+  setStageMessage('Die Wichtel kommen! 🎅');
   msg.hidden = false;
   msg.classList.remove('pop');
   void msg.offsetWidth;
@@ -442,11 +532,11 @@ async function runParade() {
   );
 
   setTimeout(() => {
-    msg.innerHTML = 'Die Wichtel holen eure Wunschzettel ab … 🎁';
+    setStageMessage('Die Wichtel holen eure Wunschzettel ab … 🎁');
   }, timing.lead + 2500);
 
   await Promise.all(runs);
-  msg.innerHTML = 'Die Wichtel laufen zu euren Tablets! 🏃💨<small>Gleich kommt bei jedem ein Zettel an …</small>';
+  setStageMessage('Die Wichtel laufen zu euren Tablets! 🏃💨<small>Gleich kommt bei jedem ein Zettel an …</small>');
   msg.classList.remove('pop');
   void msg.offsetWidth;
   msg.classList.add('pop');
@@ -510,12 +600,26 @@ function closeDrawer() {
 }
 
 function chip(child) {
+  if (child.absent) {
+    return `<span class="chip chip-absent">🤒 abwesend${child.has_note ? ' · Zettel ✓' : ' · ohne Wünsche'}</span>`;
+  }
   if (state.round.drawn_at) {
     return child.revealed ? '<span class="chip chip-revealed">📬 geöffnet</span>' : child.done ? '<span class="chip chip-done">🎁 eingepackt</span>' : '<span class="chip chip-open">noch kein Zettel</span>';
   }
   if (child.done) return '<span class="chip chip-done">🎁 eingepackt</span>';
   if (child.claimed) return '<span class="chip chip-writing">✏️ schreibt</span>';
   return '<span class="chip chip-open">wartet</span>';
+}
+
+/** Download-Knöpfe für die Wichtelzettel der abwesenden Kinder (erst nach der Auslosung) */
+function absentDownloadsHtml() {
+  const absent = state.children.filter((c) => c.absent);
+  if (!absent.length) {
+    return '<p style="font-size:.92rem;opacity:.8;margin:.3rem 0 0">Im Moment ist niemand als abwesend markiert. Fehlt ein Kind, markiere es oben in der Liste mit 🤒. Dann kannst du hier seinen Wichtelzettel herunterladen.</p>';
+  }
+  return `<div class="absent-downloads">${absent
+    .map((c) => `<button class="btn btn-green btn-small" data-act="absent-image" data-id="${c.id}">⬇️ Zettel für ${esc(c.name)}</button>`)
+    .join('')}</div>`;
 }
 
 function renderDrawer(full = false) {
@@ -529,6 +633,8 @@ function renderDrawer(full = false) {
       <div class="kid-row" data-id="${c.id}">
         <span class="k-name" data-act="rename" title="Umbenennen">${esc(c.name)}</span>
         ${chip(c)}
+        ${c.absent ? `<button class="icon-btn" data-act="note" title="Wünsche für ${esc(c.name)} eintragen oder ändern">📝</button>` : ''}
+        <button class="icon-btn${c.absent ? ' on' : ''}" data-act="absent" title="${c.absent ? 'Ist wieder da (nicht mehr abwesend)' : 'Als abwesend markieren (krank oder nicht da)'}">🤒</button>
         ${c.claimed ? `<button class="icon-btn" data-act="release" title="Tablet freigeben (z. B. wenn das Kind das Gerät wechselt)">🔓</button>` : ''}
         ${!drawn && c.done ? `<button class="icon-btn" data-act="reopen" title="Zettel wieder öffnen">✏️</button>` : ''}
         ${!drawn ? `<button class="icon-btn" data-act="delete" title="Entfernen">🗑️</button>` : ''}
@@ -540,6 +646,7 @@ function renderDrawer(full = false) {
     drawerEl.querySelector('#kidList').innerHTML = listHtml || '<p>Noch keine Kinder.</p>';
     drawerEl.querySelector('#kidCount').textContent = String(children.length);
     drawerEl.querySelector('#afterDraw').hidden = !drawn;
+    drawerEl.querySelector('#absentDownloads').innerHTML = absentDownloadsHtml();
     drawerEl.querySelector('#addSection').hidden = drawn;
     return;
   }
@@ -566,7 +673,7 @@ function renderDrawer(full = false) {
           <textarea class="textarea" id="dAdd" style="min-height:5em" placeholder="Lena&#10;Max"></textarea></label>
         <button class="btn btn-green btn-small" data-act="add">Hinzufügen</button>
       </div>
-      <p style="font-size:.88rem;opacity:.75;margin:.8rem 0 0">🔓 = Tablet freigeben: Hat ein Kind aus Versehen den falschen Namen gewählt oder das Gerät gewechselt, kann es den Namen danach neu antippen.</p>
+      <p style="font-size:.88rem;opacity:.75;margin:.8rem 0 0">🤒 = abwesend (krank oder nicht da): Das Kind hält die Auslosung nicht auf. Mit 📝 trägst du seine Wünsche ein, nach der Auslosung gibt es seinen Wichtelzettel als Bild.<br>🔓 = Tablet freigeben: Hat ein Kind aus Versehen den falschen Namen gewählt oder das Gerät gewechselt, kann es den Namen danach neu antippen.</p>
     </div>
 
     <h3>🔗 Links</h3>
@@ -584,6 +691,11 @@ function renderDrawer(full = false) {
         <p style="margin-top:0"><b>📄 Wichtelkarten zum Ausdrucken</b><br>
           <span style="font-size:.92rem">Pro Kind ein Blatt: vorne der Name des Kindes, hinten geheim, für wen es wichtelt (mit Wünschen). So kannst du einem Kind, das es vergessen hat, sein Blatt geben, ohne selbst hinzuschauen. <b>Beidseitig drucken</b> (an der langen Kante wenden).</span></p>
         <button class="btn btn-green btn-small" data-act="cards-pdf">📄 Wichtelkarten als PDF speichern</button>
+        <div id="absentSection" style="margin-top:1.1rem">
+          <p style="margin:0"><b>🤒 Wichtelzettel für abwesende Kinder</b><br>
+            <span style="font-size:.92rem">Als Bild herunterladen und dem Kind oder den Eltern schicken. Das Bild verrät, für wen das Kind wichtelt: bitte nicht am Beamer öffnen.</span></p>
+          <div id="absentDownloads">${absentDownloadsHtml()}</div>
+        </div>
         <p style="margin-bottom:0">Falls ein Kind vergisst, für wen es wichtelt, kannst du hier nachschauen:</p>
         <button class="btn btn-gold btn-small" data-act="pairs" style="margin-top:8px">🔒 Zuteilung anzeigen</button>
         <p style="margin-bottom:0"><button class="btn-link" data-act="undraw">Auslosung rückgängig machen …</button></p>
@@ -618,7 +730,7 @@ async function onDrawerClick(e) {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const act = btn.dataset.act;
-  const id = btn.closest('[data-id]')?.dataset.id;
+  const id = btn.dataset.id || btn.closest('[data-id]')?.dataset.id;
   const child = id ? state.children.find((c) => String(c.id) === id) : null;
 
   switch (act) {
@@ -655,6 +767,20 @@ async function onDrawerClick(e) {
       break;
     case 'reopen':
       await adminCall('POST', `/children/${child.id}/reopen`, {});
+      break;
+    case 'absent':
+      if (child.absent) {
+        await adminCall('POST', `/children/${child.id}/absent`, { absent: false });
+      } else if (await adminCall('POST', `/children/${child.id}/absent`, { absent: true })) {
+        const now = state.children.find((c) => c.id === child.id);
+        if (now && !now.has_note) await editNote(now, { skippable: true });
+      }
+      break;
+    case 'note':
+      await editNote(child);
+      break;
+    case 'absent-image':
+      await downloadAbsentImage(child, btn);
       break;
     case 'delete':
       if (await ask({ title: `${child.name} entfernen?`, text: 'Der Wunschzettel wird ebenfalls gelöscht.', ok: 'Entfernen', danger: true })) {
@@ -720,6 +846,44 @@ function fileSlug(text) {
       .replace(/[^A-Za-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'Klasse'
   );
+}
+
+/** Wichtelzettel eines abwesenden Kindes als Bild herunterladen (zum Weitergeben) */
+async function downloadAbsentImage(child, btn) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Wird erstellt …';
+  try {
+    const pairs = await api('GET', `/api/rounds/${code}/admin/pairs`, { headers: { 'X-Admin-Token': token } });
+    const pair = pairs.find((p) => p.giver.id === child.id);
+    if (!pair?.giftee) throw new Error('Für dieses Kind gibt es keine Zuteilung.');
+    const { renderNoteImage } = await import('./note-image.js');
+    const blob = await renderNoteImage({
+      giver: child.name,
+      name: pair.giftee.name,
+      wishes: pair.giftee.wishes,
+      nogos: pair.giftee.nogos,
+      hint: state.round.hint,
+      title: state.round.title,
+    });
+    if (!blob) throw new Error('Das Bild konnte nicht erstellt werden.');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // Der Dateiname nennt nur das abwesende Kind, nicht die Person, für die es wichtelt
+    a.download = `Wichtelpost-an-${fileSlug(child.name)}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(`Bild für ${child.name} gespeichert ✓`);
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Das Bild konnte nicht erstellt werden.', { type: 'error', ms: 6000 });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
 }
 
 async function downloadCards(btn) {
