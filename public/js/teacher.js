@@ -566,8 +566,11 @@ function renderDrawer(full = false) {
     <div id="afterDraw" ${drawn ? '' : 'hidden'}>
       <h3>🤫 Nach der Auslosung</h3>
       <div class="section">
-        <p style="margin-top:0">Falls ein Kind vergisst, für wen es wichtelt:</p>
-        <button class="btn btn-gold btn-small" data-act="pairs">🔒 Zuteilung anzeigen</button>
+        <p style="margin-top:0"><b>📄 Wichtelkarten zum Ausdrucken</b><br>
+          <span style="font-size:.92rem">Pro Kind ein Blatt: vorne der Name des Kindes, hinten geheim, für wen es wichtelt (mit Wünschen). So kannst du einem Kind, das es vergessen hat, sein Blatt geben, ohne selbst hinzuschauen. <b>Beidseitig drucken</b> (an der langen Kante wenden).</span></p>
+        <button class="btn btn-green btn-small" data-act="cards-pdf">📄 Wichtelkarten als PDF speichern</button>
+        <p style="margin-bottom:0">Falls ein Kind vergisst, für wen es wichtelt, kannst du hier nachschauen:</p>
+        <button class="btn btn-gold btn-small" data-act="pairs" style="margin-top:8px">🔒 Zuteilung anzeigen</button>
         <p style="margin-bottom:0"><button class="btn-link" data-act="undraw">Auslosung rückgängig machen …</button></p>
       </div>
     </div>
@@ -652,6 +655,9 @@ async function onDrawerClick(e) {
     case 'pairs':
       await showPairs();
       break;
+    case 'cards-pdf':
+      await downloadCards(btn);
+      break;
     case 'undraw':
       if (
         await ask({
@@ -688,6 +694,55 @@ async function onDrawerClick(e) {
       break;
     default:
       break;
+  }
+}
+
+function fileSlug(text) {
+  return (
+    String(text || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'Klasse'
+  );
+}
+
+async function downloadCards(btn) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Wird erstellt …';
+  try {
+    const pairs = await api('GET', `/api/rounds/${code}/admin/pairs`, { headers: { 'X-Admin-Token': token } });
+    const { buildCardsPdf } = await import('./cards-pdf.js');
+    const blob = await buildCardsPdf({
+      title: state.round.title,
+      hint: state.round.hint,
+      pairs,
+      onProgress: (done, total) => {
+        btn.textContent = `⏳ Karte ${done} von ${total} …`;
+      },
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Wichtelkarten-${fileSlug(state.round.title)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    const missing = pairs.filter((p) => p.giftee && !p.giftee.wishes && !p.giftee.nogos).length;
+    toast(
+      missing
+        ? `PDF gespeichert ✓ – Achtung: ${missing} ${missing === 1 ? 'Kind hat' : 'Kinder haben'} noch keinen Wunschzettel geschrieben. Später nochmal speichern für den neuesten Stand.`
+        : 'PDF gespeichert ✓ – beidseitig drucken (an der langen Kante wenden).',
+      { ms: 7000 },
+    );
+  } catch (err) {
+    console.error(err);
+    toast(err instanceof ApiError ? err.message : 'Das PDF konnte nicht erstellt werden.', { type: 'error', ms: 6000 });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
   }
 }
 

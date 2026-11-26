@@ -28,7 +28,8 @@ Am Beamer sieht man nur, *dass* die Wichtel unterwegs sind, nie, wer für wen wi
 - **Teilen sich zwei Kinder ein Tablet?** Kein Problem: Oben rechts gibt es „Nicht du? Name wechseln“.
 - **Fehlt ein Kind?** Du kannst trotzdem auslosen. Das Kind schreibt seinen Wunschzettel später und bekommt seinen Wichtelzettel dann sofort. Wer für dieses Kind wichtelt, sieht die Wünsche, sobald sie geschrieben sind (die Seite aktualisiert sich von selbst).
 - **Auslosung:** Alle Kinder bilden einen grossen Kreis (A → B → C → … → A). Niemand zieht sich selbst und es gibt keine Paare, die sich gegenseitig beschenken. Mindestens 3 Kinder.
-- **Ein Kind hat vergessen, für wen es wichtelt?** Es öffnet die Seite einfach nochmal auf seinem Tablet. Oder du schaust in der Verwaltung unter *🔒 Zuteilung anzeigen* nach (nicht am Beamer!).
+- **📄 Wichtelkarten zum Ausdrucken:** Nach der Auslosung kannst du in der Verwaltung ein PDF speichern. Pro Kind gibt es ein Blatt: **vorne** steht gross der Name des Kindes, **hinten** geheim, für wen es wichtelt, mit Wünschen, No-Gos und deinem Hinweis. **Beidseitig drucken** (an der langen Kante wenden). Vergisst ein Kind, für wen es wichtelt, suchst du sein Blatt anhand des Namens und gibst es ihm, ohne die Rückseite selbst anzuschauen. Die Blätter sind alphabetisch sortiert. Schreibt ein Kind seinen Wunschzettel erst später, speicherst du das PDF einfach nochmal.
+- **Ein Kind hat vergessen, für wen es wichtelt?** Es öffnet die Seite einfach nochmal auf seinem Tablet. Oder es bekommt seine Wichtelkarte (siehe oben). Am Bildschirm siehst du die Liste unter *🔒 Zuteilung anzeigen* (nicht am Beamer!).
 - **Lehrer-Link:** Nur wer den geheimen Lehrer-Link hat, kann die Runde verwalten und die Wichtel losschicken. Auf dem Gerät, auf dem du die Runde erstellt hast, findest du sie unter *Deine Wichtelrunden* auf der Startseite. Für ein anderes Gerät (z. B. den Beamer-Computer) kopierst du den Lehrer-Link in der Verwaltung.
 
 ---
@@ -61,7 +62,7 @@ So läuft das Tool auf deinem Infomaniak-Webhosting mit Node.js, genau wie die I
 
 1. Infomaniak-Manager → **Web & Domains → dein Webhosting → Website hinzufügen** → Technologie **Node.js**.
 2. Webadresse: eine **Subdomain**, z. B. `wichteln.deinedomain.ch` (nicht die Hauptdomain, sonst wird deine Website ersetzt).
-3. **Bestehendes Projekt importieren** → ZIP hochladen. Die ZIP bekommst du auf GitHub unter *Code → Download ZIP* (oder du packst den Ordner des Tools selbst, dann aber **ohne `node_modules` und `data`**).
+3. **Bestehendes Projekt importieren** → ZIP hochladen. Wichtig: In der ZIP müssen `package.json`, `src` und `public` **direkt** liegen, nicht in einem Unterordner. Die ZIP von GitHub (*Code → Download ZIP*) enthält einen Ordner `Wichteln-main`: entpacken, diesen Ordner öffnen, alles darin markieren → „In ZIP-Datei komprimieren“ (ohne `node_modules` und `data`).
 4. **Build-Befehl:** `npm install` · **Ausführungsbefehl:** `npm start` · **Port:** `3000` → *Installation abschliessen*.
 5. SSL-Zertifikat (https) für die Subdomain aktivieren. Danach ist das Tool unter `https://wichteln.deinedomain.ch` erreichbar.
 
