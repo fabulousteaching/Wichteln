@@ -52,7 +52,7 @@ Das Tool ist eine ganz normale **PHP-Website** (PHP 8). Es braucht **keine Daten
 2. Im Manager dein Webhosting öffnen → links **FTP / SSH** → **Web FTP**.
 3. In den Ordner **`sites/wichteln.deinedomain.ch`** wechseln. Liegt dort schon eine `index.html` von Infomaniak, diese löschen.
 4. Die ZIP-Datei in den Ordner ziehen (hochladen), dann **Rechtsklick → Entpacken** und die ZIP-Datei danach löschen.
-5. Kontrolle: Direkt im Ordner müssen jetzt u. a. `index.html`, `api.php`, `.htaccess` sowie die Ordner `js`, `css`, `lib` und `data` liegen (nicht in einem Unterordner).
+5. Kontrolle: Direkt im Ordner müssen jetzt u. a. `index.html`, `api.php`, `.htaccess` sowie die Ordner `js`, `css`, `wichtel-app` und `data` liegen (nicht in einem Unterordner).
 6. `https://wichteln.deinedomain.ch` öffnen. Fertig! 🎄
 
 **So bekommst du die ZIP-Datei:** Wer Git und Node.js hat, führt `npm run zip` aus (die Datei landet in `dist/`). Ohne das: auf GitHub *Code → Download ZIP*, entpacken, den Ordner **`web`** öffnen, alles darin markieren → „In ZIP-Datei komprimieren“.
@@ -122,7 +122,7 @@ Kopiere `config.example.php` auf dem Server zu **`config.php`** und passe die We
 
 ## Technik
 
-- `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `lib/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `lib` und `data`.
+- `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `wichtel-app/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `wichtel-app` und `data`. (Der Ordner heisst nicht `lib`, weil Infomaniak diesen Namen in Website-Ordnern selbst belegt.)
 - Beamer und Tablets fragen alle 2–3 Sekunden mit einer winzigen Anfrage nach, ob sich etwas geändert hat (`/api/rounds/CODE/version`).
 - Alle Bilder (Wichtel, Geschenke, Tannenbaum, Lichterkette) sind selbst gezeichnete SVGs, die Klänge werden im Browser erzeugt, der QR-Code ebenfalls ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT). Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
 - **Entwicklung** (braucht PHP und Node.js): `npm run dev` startet `http://localhost:8000`, `npm test` prüft Schnittstelle und Auslosung gegen den eingebauten PHP-Server.
