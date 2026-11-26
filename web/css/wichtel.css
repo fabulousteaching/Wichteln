@@ -173,6 +173,14 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .elf .elf-hat { transform-box: fill-box; transform-origin: 50% 100%; }
 .elf .elf-arm { transform-box: fill-box; transform-origin: 50% 0; }
 .elf .elf-carry, .elf .elf-arms-carry { display: none; }
+/* Blinzeln (die Lider sind im Bild ohne CSS unsichtbar) */
+.elf .elf-lid { opacity: 1; transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); animation: blink 4.6s infinite; }
+.elf:nth-child(3n) .elf-lid { animation-delay: -1.7s; }
+.elf:nth-child(3n+1) .elf-lid { animation-delay: -3.1s; }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(0); } 95.5% { transform: scaleY(1); } }
+.elf .elf-pom { transform-box: fill-box; transform-origin: 30% 70%; }
+.elf.walking .elf-pom { animation: pom-bounce .46s ease-in-out infinite alternate; }
+@keyframes pom-bounce { from { transform: rotate(-8deg); } to { transform: rotate(10deg); } }
 .elf.carrying .elf-carry, .elf.carrying .elf-arms-carry { display: inline; }
 .elf.carrying .elf-arms-free { display: none; }
 
