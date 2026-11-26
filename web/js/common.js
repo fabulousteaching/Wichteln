@@ -33,12 +33,19 @@ export class ApiError extends Error {
 }
 
 export async function api(method, url, { body, headers = {} } = {}) {
+  // Manche Webserver lassen nur GET/POST durch: PUT/PATCH/DELETE werden als POST mit Kopfzeile geschickt.
+  const isGet = method === 'GET';
+  const sendHeaders = { ...headers };
+  if (!isGet) {
+    sendHeaders['Content-Type'] = 'application/json';
+    if (method !== 'POST') sendHeaders['X-HTTP-Method-Override'] = method;
+  }
   let res;
   try {
     res = await fetch(url, {
-      method,
-      headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      method: isGet ? 'GET' : 'POST',
+      headers: sendHeaders,
+      body: isGet ? undefined : JSON.stringify(body ?? {}),
       cache: 'no-store',
     });
   } catch {
@@ -84,43 +91,56 @@ export const storage = {
 };
 
 // ---------------------------------------------------------------------------
-// Live-Updates: Server-Sent Events + Sicherheitsnetz per Abfrage
+// Live-Updates: regelmässig nachfragen, ob sich etwas geändert hat (sehr kleine Anfrage)
 // ---------------------------------------------------------------------------
 
-export function liveUpdates(code, onChange, { pollMs = 12000 } = {}) {
-  let es = null;
+export function liveUpdates(code, onChange, { intervalMs = 2500, hiddenIntervalMs = 15000 } = {}) {
+  let version = null;
   let timer = null;
   let stopped = false;
-  let pending = null;
+  let busy = false;
 
-  const trigger = (type) => {
-    if (pending) return;
-    pending = setTimeout(() => {
-      pending = null;
-      if (!stopped) onChange(type);
-    }, 120);
+  const check = async (reason) => {
+    if (stopped || busy) return;
+    busy = true;
+    try {
+      const res = await fetch(`/api/rounds/${encodeURIComponent(code)}/version`, { cache: 'no-store' });
+      if (res.status === 404) {
+        stopped = true;
+        onChange('deleted');
+        return;
+      }
+      if (res.ok) {
+        const { v } = await res.json();
+        if (version !== null && v !== version) await onChange('update');
+        else if (reason === 'visible') await onChange('visible');
+        version = v;
+      }
+    } catch {
+      /* kurz offline – beim nächsten Mal wieder versuchen */
+    } finally {
+      busy = false;
+      schedule();
+    }
   };
 
-  const connect = () => {
-    if (!window.EventSource) return;
-    es = new EventSource(`/api/rounds/${encodeURIComponent(code)}/events`);
-    es.addEventListener('update', () => trigger('update'));
-    es.addEventListener('drawn', () => trigger('drawn'));
-    es.addEventListener('deleted', () => trigger('deleted'));
-    es.onopen = () => trigger('reconnect');
+  const schedule = () => {
+    clearTimeout(timer);
+    if (stopped) return;
+    timer = setTimeout(check, document.visibilityState === 'visible' ? intervalMs : hiddenIntervalMs);
   };
 
-  connect();
-  timer = setInterval(() => trigger('poll'), pollMs);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') trigger('visible');
+    if (document.visibilityState === 'visible') check('visible');
   });
+  check('start');
 
   return {
+    /** Sofort nachfragen (z. B. nach einer eigenen Änderung). */
+    poke: () => check('poke'),
     stop() {
       stopped = true;
-      es?.close();
-      clearInterval(timer);
+      clearTimeout(timer);
     },
   };
 }

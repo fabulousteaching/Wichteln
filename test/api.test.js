@@ -2,30 +2,53 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createApp, EventHub } = require('../src/server');
-const { openStore } = require('../src/store');
+const fs = require('node:fs');
+const os = require('node:os');
+const net = require('node:net');
+const path = require('node:path');
+const { spawn, execFileSync } = require('node:child_process');
 
-const quietLogger = { log() {}, warn() {}, error() {} };
+const ROOT = path.join(__dirname, '..');
+const GUARD = '<?php http_response_code(404); exit; ?>\n';
 
-async function startServer(t, configOverrides = {}) {
-  const store = openStore(':memory:');
-  const hub = new EventHub();
-  const config = { port: 0, teacherPassword: '', publicUrl: 'https://wichtel.test', retentionDays: 120, ...configOverrides };
-  const app = createApp({ store, config, hub, logger: quietLogger });
-  const server = await new Promise((resolve) => {
-    const s = app.listen(0, '127.0.0.1', () => resolve(s));
+function freePort() {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
+
+/** Startet den eingebauten PHP-Server mit einem leeren Datenordner. */
+async function startServer(t, env = {}) {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wichtel-test-'));
+  const port = await freePort();
+  const proc = spawn('php', ['-S', `127.0.0.1:${port}`, '-t', 'web', 'test/router.php'], {
+    cwd: ROOT,
+    env: { ...process.env, WICHTEL_DATA_DIR: dataDir, PUBLIC_URL: 'https://wichtel.test', TEACHER_PASSWORD: '', ...env },
+    stdio: 'ignore',
   });
   t.after(() => {
-    hub.closeAll();
-    server.close();
-    store.close();
+    proc.kill();
+    fs.rmSync(dataDir, { recursive: true, force: true });
   });
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const base = `http://127.0.0.1:${port}`;
+  for (let i = 0; i < 100; i++) {
+    try {
+      await fetch(`${base}/api/config`);
+      break;
+    } catch {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }
   async function call(method, url, { body, headers = {} } = {}) {
+    const hasBody = method !== 'GET';
     const res = await fetch(base + url, {
       method,
-      headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), ...headers },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      headers: { ...(hasBody ? { 'content-type': 'application/json' } : {}), ...headers },
+      body: hasBody ? JSON.stringify(body ?? {}) : undefined,
     });
     const text = await res.text();
     let data;
@@ -36,7 +59,14 @@ async function startServer(t, configOverrides = {}) {
     }
     return { status: res.status, data, headers: res.headers };
   }
-  return { call, store, base };
+  const roundFile = (code) => path.join(dataDir, 'rounds', `${code}.json.php`);
+  const editRound = (code, fn) => {
+    const file = roundFile(code);
+    const round = JSON.parse(fs.readFileSync(file, 'utf8').slice(GUARD.length));
+    fn(round);
+    fs.writeFileSync(file, GUARD + JSON.stringify(round));
+  };
+  return { call, base, dataDir, roundFile, editRound };
 }
 
 async function createRound(call, names = ['Lena', 'Max', 'Aylin', 'Noah']) {
@@ -47,7 +77,7 @@ async function createRound(call, names = ['Lena', 'Max', 'Aylin', 'Noah']) {
 }
 
 test('Ganzer Ablauf: Runde anlegen, Kinder wählen Namen, schreiben, Auslosung, Zettel', async (t) => {
-  const { call, store } = await startServer(t);
+  const { call, editRound, roundFile } = await startServer(t);
   const { code, admin } = await createRound(call);
 
   // Lehrperson sieht alle Kinder
@@ -59,10 +89,12 @@ test('Ganzer Ablauf: Runde anlegen, Kinder wählen Namen, schreiben, Auslosung, 
   // Ohne Lehrer-Token kein Zugriff
   assert.equal((await call('GET', `/api/rounds/${code}/admin`)).status, 403);
 
-  // QR-Code
-  const qr = await call('GET', `/api/rounds/${code}/qr.svg`);
-  assert.equal(qr.status, 200);
-  assert.match(qr.headers.get('content-type'), /image\/svg\+xml/);
+  // Datenfile ist geschützt: direkt ausgeführt gibt es nichts aus
+  assert.equal(execFileSync('php', [roundFile(code)]).toString(), '');
+  assert.ok(fs.readFileSync(roundFile(code), 'utf8').includes('Lena'));
+
+  // Kleine Abfrage, ob sich etwas geändert hat
+  const v1 = (await call('GET', `/api/rounds/${code}/version`)).data.v;
 
   // Kinder wählen ihre Namen
   const kids = (await call('GET', `/api/rounds/${code.toLowerCase()}/kids`)).data.children;
@@ -122,9 +154,13 @@ test('Ganzer Ablauf: Runde anlegen, Kinder wählen Namen, schreiben, Auslosung, 
   assert.ok(early.data.reveal.in_ms > 0);
   assert.equal(early.data.reveal.giftee, null);
 
+  // Version hat sich geändert
+  assert.notEqual((await call('GET', `/api/rounds/${code}/version`)).data.v, v1);
+
   // Zeit vorspulen: Parade vorbei
-  const round = store.getRound(code);
-  store.db.prepare('UPDATE rounds SET drawn_at = ? WHERE id = ?').run(round.drawn_at - 60000, round.id);
+  editRound(code, (round) => {
+    round.drawn_at -= 60000;
+  });
 
   const seen = new Set();
   for (const kid of kids) {
@@ -193,13 +229,13 @@ test('Lehrperson verwaltet Kinder: hinzufügen, umbenennen, freigeben, entfernen
 });
 
 test('Optionales Lehrer-Passwort zum Anlegen neuer Runden', async (t) => {
-  const { call } = await startServer(t, { teacherPassword: 'geheim' });
+  const { call } = await startServer(t, { TEACHER_PASSWORD: 'geheim' });
   assert.equal((await call('GET', '/api/config')).data.password_required, true);
   assert.equal((await call('POST', '/api/rounds', { body: { title: 'x', names: 'a\nb\nc' } })).status, 401);
   assert.equal((await call('POST', '/api/rounds', { body: { title: 'x', names: 'a\nb\nc', password: 'geheim' } })).status, 201);
 });
 
-test('Seiten und Live-Updates sind erreichbar', async (t) => {
+test('Seiten sind erreichbar, interne Ordner nicht', async (t) => {
   const { call, base } = await startServer(t);
   const { code } = await createRound(call);
   for (const url of ['/', `/lehrer/${code}`, `/k/${code}`]) {
@@ -207,9 +243,31 @@ test('Seiten und Live-Updates sind erreichbar', async (t) => {
     assert.equal(res.status, 200, url);
     assert.match(res.headers.get('content-type'), /text\/html/);
   }
-  const controller = new AbortController();
-  const res = await fetch(`${base}/api/rounds/${code}/events`, { signal: controller.signal });
+  for (const url of ['/lib/wichtel.php', `/data/rounds/${code}.json.php`]) {
+    assert.equal((await fetch(base + url)).status, 403, url);
+  }
+  assert.equal((await call('GET', '/api/rounds/XXXXX/version')).status, 404);
+});
+
+test('Nur JSON-Anfragen; PUT/PATCH/DELETE auch als POST mit Kopfzeile', async (t) => {
+  const { call, base } = await startServer(t);
+  const { code, admin } = await createRound(call);
+  const form = await fetch(`${base}/api/rounds`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'x' });
+  assert.equal(form.status, 415);
+  const kids = (await call('GET', `/api/rounds/${code}/kids`)).data.children;
+  const res = await call('POST', `/api/rounds/${code}/admin/children/${kids[0].id}`, {
+    headers: { ...admin, 'x-http-method-override': 'PATCH' },
+    body: { name: 'Lena S.' },
+  });
   assert.equal(res.status, 200);
-  assert.match(res.headers.get('content-type'), /text\/event-stream/);
-  controller.abort();
+  assert.equal(res.data.children[0].name, 'Lena S.');
+});
+
+test('Zwei Tablets wählen gleichzeitig denselben Namen: nur eines gewinnt', async (t) => {
+  const { call } = await startServer(t);
+  const { code } = await createRound(call);
+  const kid = (await call('GET', `/api/rounds/${code}/kids`)).data.children[0];
+  const results = await Promise.all(Array.from({ length: 8 }, () => call('POST', `/api/rounds/${code}/kids/${kid.id}/claim`, { body: {} })));
+  assert.equal(results.filter((r) => r.status === 200).length, 1);
+  assert.equal(results.filter((r) => r.status === 409).length, 7);
 });

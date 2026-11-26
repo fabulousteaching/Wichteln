@@ -1,6 +1,7 @@
 import { $, esc, api, ApiError, storage, liveUpdates, startSnow, sparkle, sleep, toast, ask, askText, copyText, reducedMotion } from './common.js';
 import { elfSvg, giftSvg, treeSvg, hillsSvg, pencilSvg, checkSvg, mountGarland, mountStars } from './art.js';
 import { sound } from './sound.js';
+import { qrSvg } from './qr.js';
 
 const STAGE_W = 1600;
 const STAGE_H = 900;
@@ -109,7 +110,7 @@ async function init() {
       return;
     }
     await refresh();
-  });
+  }, { intervalMs: 2000 });
 
   $('#goButton').addEventListener('click', onGo);
 }
@@ -135,7 +136,7 @@ async function refresh() {
 // ---------------------------------------------------------------------------
 
 function setupQr() {
-  $('#qrImg').src = `/api/rounds/${code}/qr.svg?v=${Date.now()}`;
+  $('#qrImg').src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qrSvg(state.kid_url))}`;
   $('#qrUrl').textContent = state.kid_url.replace(/^https?:\/\//, '');
   $('#qrCode').textContent = code;
 }

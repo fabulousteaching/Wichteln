@@ -34,71 +34,70 @@ Am Beamer sieht man nur, *dass* die Wichtel unterwegs sind, nie, wer für wen wi
 
 ---
 
-## Starten auf dem eigenen Computer (kostenlos)
+## Online stellen bei Infomaniak (normale PHP-Website)
 
-Voraussetzung: [Node.js](https://nodejs.org) **Version 22.13 oder neuer**.
+Das Tool ist eine ganz normale **PHP-Website** (PHP 8). Es braucht **keine Datenbank** und kein Node.js: Die Wichtelrunden werden als geschützte Dateien im Ordner `data` gespeichert. Es läuft also in jedem Infomaniak-Webhosting, wie deine anderen Websites.
+
+### 1. Website anlegen
+
+1. Im [Infomaniak-Manager](https://manager.infomaniak.com) **Web & Domains** öffnen.
+2. Rechts in der Zeile deines Webhostings auf **⋮** klicken → **Website hinzufügen**.
+3. Eine normale Website (PHP) **ohne** Vorlage/CMS wählen.
+4. Als Adresse eine **Subdomain** wählen, z. B. `wichteln.deinedomain.ch`. ⚠️ Nicht die Hauptdomain.
+5. **SSL (https)** für die Subdomain aktivieren, falls das nicht automatisch passiert.
+
+### 2. Dateien hochladen
+
+1. Die Datei **`Wichteln-Website.zip`** bereithalten (siehe unten, wie du sie bekommst).
+2. Im Manager dein Webhosting öffnen → links **FTP / SSH** → **Web FTP**.
+3. In den Ordner **`sites/wichteln.deinedomain.ch`** wechseln. Liegt dort schon eine `index.html` von Infomaniak, diese löschen.
+4. Die ZIP-Datei in den Ordner ziehen (hochladen), dann **Rechtsklick → Entpacken** und die ZIP-Datei danach löschen.
+5. Kontrolle: Direkt im Ordner müssen jetzt u. a. `index.html`, `api.php`, `.htaccess` sowie die Ordner `js`, `css`, `lib` und `data` liegen (nicht in einem Unterordner).
+6. `https://wichteln.deinedomain.ch` öffnen. Fertig! 🎄
+
+**So bekommst du die ZIP-Datei:** Wer Git und Node.js hat, führt `npm run zip` aus (die Datei landet in `dist/`). Ohne das: auf GitHub *Code → Download ZIP*, entpacken, den Ordner **`web`** öffnen, alles darin markieren → „In ZIP-Datei komprimieren“.
+
+### Alternative: mit einem Befehl über die SSH-Konsole
+
+Wenn du bei Infomaniak eine SSH-Konsole öffnen kannst, geht Installieren und Aktualisieren auch ohne ZIP (Ordner ggf. anpassen):
 
 ```bash
-git clone https://github.com/fabulousteaching/Wichteln.git
-cd Wichteln
-npm install
-npm start
+cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash -s -- --install
 ```
 
-(Ohne Git: auf GitHub *Code → Download ZIP*, entpacken und im entpackten Ordner `npm install` und `npm start` ausführen.)
-
-Im Fenster erscheinen zwei Adressen:
-
-```
-🎄 Wichtel-Tool läuft:  http://localhost:3000
-   Im gleichen WLAN:     http://192.168.1.23:3000
-```
-
-Öffne die erste Adresse am Computer, der am Beamer hängt. Der QR-Code zeigt automatisch auf die WLAN-Adresse, damit die Tablets den Computer finden. **Computer und Tablets müssen im gleichen WLAN sein.** In manchen Schulnetzen sind Geräte voneinander abgeschirmt. Dann klappt es nur mit dem Online-Betrieb (siehe unten).
-
-## Online bei Infomaniak (rund um die Uhr erreichbar)
-
-So läuft das Tool auf deinem Infomaniak-Webhosting mit Node.js, genau wie die Instamatisierung:
-
-1. Infomaniak-Manager → **Web & Domains → dein Webhosting → Website hinzufügen** → Technologie **Node.js**.
-2. Webadresse: eine **Subdomain**, z. B. `wichteln.deinedomain.ch` (nicht die Hauptdomain, sonst wird deine Website ersetzt).
-3. **Bestehendes Projekt importieren** → ZIP hochladen. Wichtig: In der ZIP müssen `package.json`, `src` und `public` **direkt** liegen, nicht in einem Unterordner. Die ZIP von GitHub (*Code → Download ZIP*) enthält einen Ordner `Wichteln-main`: entpacken, diesen Ordner öffnen, alles darin markieren → „In ZIP-Datei komprimieren“ (ohne `node_modules` und `data`).
-4. **Build-Befehl:** `npm install` · **Ausführungsbefehl:** `npm start` · **Port:** `3000` → *Installation abschliessen*.
-5. SSL-Zertifikat (https) für die Subdomain aktivieren. Danach ist das Tool unter `https://wichteln.deinedomain.ch` erreichbar.
-
-**Aktualisieren:** Manager → deine Node.js-Website → **SSH-Konsole öffnen** und (Ordner ggf. anpassen):
+Für spätere **Updates** denselben Befehl ohne `-s -- --install`:
 
 ```bash
 cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash
 ```
 
-Danach im Manager auf **Neu starten** klicken. Die Wichtelrunden (Ordner `data`) bleiben erhalten.
+Die Wichtelrunden (Ordner `data`) und deine Einstellungen (`config.php`) bleiben dabei erhalten. Das Repository muss dafür öffentlich sein.
+
+Ohne SSH aktualisierst du per ZIP wie oben, lässt dabei aber den Ordner `data` und die Datei `config.php` auf dem Server stehen.
 
 ### Einstellungen (optional)
 
-Als Umgebungsvariablen beim Hoster oder in einer Datei `.env` setzen:
+Kopiere `config.example.php` auf dem Server zu **`config.php`** und passe die Werte an:
 
-| Variable | Bedeutung |
+| Einstellung | Bedeutung |
 | --- | --- |
-| `PORT` | Port des Servers (Standard `3000`) |
-| `TEACHER_PASSWORD` | Wenn gesetzt, braucht es dieses Passwort, um **neue Runden zu erstellen**. Praktisch, wenn die Adresse öffentlich ist. |
-| `PUBLIC_URL` | Feste Adresse für den QR-Code, z. B. `https://wichteln.deinedomain.ch` (normalerweise nicht nötig) |
-| `RETENTION_DAYS` | Nach wie vielen Tagen ohne Änderung eine Runde automatisch gelöscht wird (Standard `120`) |
-| `DATABASE_PATH` | Speicherort der Datenbank (Standard `data/wichtel.db`) |
-
-Mit Docker: `docker build -t wichtel . && docker run -p 3000:3000 -v wichtel-data:/data wichtel`
+| `teacher_password` | Wenn gesetzt, braucht es dieses Passwort, um **neue Runden zu erstellen**. Praktisch, weil die Adresse öffentlich ist. |
+| `retention_days` | Nach wie vielen Tagen ohne Änderung eine Runde automatisch gelöscht wird (Standard `120`) |
+| `public_url` | Feste Adresse für den QR-Code, z. B. `https://wichteln.deinedomain.ch` (normalerweise nicht nötig) |
 
 ---
 
 ## Datenschutz
 
 - Gespeichert werden nur die **Vornamen**, die du eingibst, und die **Wunschzettel**. Keine E-Mail-Adressen, keine Konten, keine Tracker, keine externen Schriften oder Skripte.
+- Die Daten liegen auf **deinem** Webhosting im Ordner `data`. Dieser Ordner ist für den Browser gesperrt, und jede Datei beginnt zusätzlich mit einer PHP-Sperre, sodass beim Aufruf nichts ausgegeben wird.
 - Die Namensliste einer Runde sieht nur, wer den Code bzw. QR-Code kennt.
 - Wer für wen wichtelt, sieht nur das jeweilige Kind auf seinem Tablet (und du über den Lehrer-Link).
 - Runden lassen sich in der Verwaltung jederzeit **löschen** und werden nach 120 Tagen ohne Änderung automatisch gelöscht.
 
 ## Technik
 
-- Node.js + Express, Datenbank SQLite (`node:sqlite`), Live-Aktualisierung per Server-Sent Events (mit automatischem Rückfall auf regelmässiges Nachfragen).
-- Alle Bilder (Wichtel, Geschenke, Tannenbaum, Lichterkette) sind selbst gezeichnete SVGs, die Klänge werden im Browser erzeugt. Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
-- Tests: `npm test`
+- `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `lib/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `lib` und `data`.
+- Beamer und Tablets fragen alle 2–3 Sekunden mit einer winzigen Anfrage nach, ob sich etwas geändert hat (`/api/rounds/CODE/version`).
+- Alle Bilder (Wichtel, Geschenke, Tannenbaum, Lichterkette) sind selbst gezeichnete SVGs, die Klänge werden im Browser erzeugt, der QR-Code ebenfalls ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT). Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
+- **Entwicklung** (braucht PHP und Node.js): `npm run dev` startet `http://localhost:8000`, `npm test` prüft Schnittstelle und Auslosung gegen den eingebauten PHP-Server.
