@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
 #
-# Aktualisiert das Wichtel-Tool auf die neueste Version von GitHub.
-# Die Wichtelrunden (Ordner data) und die Einstellungen (.env) bleiben unverändert.
+# Installiert bzw. aktualisiert das Wichtel-Tool (PHP-Website) mit der neuesten Version von GitHub.
+# Die Wichtelrunden (Ordner data) und die Einstellungen (config.php) bleiben unverändert.
 #
-# Aufruf im Ordner des Tools, z. B. in der SSH-Konsole von Infomaniak:
-#   cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash
-#
-# Danach das Tool neu starten (bei Infomaniak im Manager auf "Neu starten").
+# Aufruf im Ordner der Website, z. B. in der SSH-Konsole von Infomaniak:
+#   Erstinstallation:
+#     cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash -s -- --install
+#   Update:
+#     cd ~/sites/wichteln.deinedomain.ch && curl -fsSL https://raw.githubusercontent.com/fabulousteaching/Wichteln/main/scripts/update.sh | bash
 
 set -euo pipefail
 
 REPO="fabulousteaching/Wichteln"
 BRANCH="${WICHTEL_BRANCH:-main}"
 APP_DIR="$(pwd)"
+INSTALL=0
+[ "${1:-}" = "--install" ] && INSTALL=1
 
-if [ ! -f "$APP_DIR/package.json" ] || ! grep -q '"name": "wichtel"' "$APP_DIR/package.json"; then
-  echo "✗ Hier liegt kein Wichtel-Tool ($APP_DIR)."
-  echo "  Bitte zuerst in den Ordner des Tools wechseln (cd …) und erneut starten."
+if [ ! -f "$APP_DIR/lib/wichtel.php" ] && [ "$INSTALL" -ne 1 ]; then
+  echo "✗ Hier liegt (noch) kein Wichtel-Tool ($APP_DIR)."
+  echo "  Für eine Erstinstallation den Befehl mit  bash -s -- --install  am Ende ausführen."
   exit 1
 fi
 
@@ -26,22 +29,32 @@ trap 'rm -rf "$TMP"' EXIT
 echo "→ Lade die neueste Version herunter …"
 curl -fsSL "https://codeload.github.com/$REPO/tar.gz/refs/heads/$BRANCH" | tar -xz -C "$TMP" --strip-components=1
 
-SRC="$TMP"
-if [ ! -f "$SRC/package.json" ] || [ ! -d "$SRC/src" ]; then
+SRC="$TMP/web"
+if [ ! -f "$SRC/api.php" ] || [ ! -f "$SRC/lib/wichtel.php" ]; then
   echo "✗ Download unvollständig – nichts wurde verändert."
   exit 1
 fi
 
-echo "→ Ersetze Programmdateien (.env und data bleiben unverändert) …"
-for item in src public scripts package.json package-lock.json README.md Dockerfile; do
-  if [ -e "$SRC/$item" ]; then
-    rm -rf "${APP_DIR:?}/$item"
-    cp -R "$SRC/$item" "$APP_DIR/$item"
-  fi
+# Platzhalter-Startseite von Infomaniak entfernen (nur bei Erstinstallation)
+if [ "$INSTALL" -eq 1 ] && [ ! -f "$APP_DIR/lib/wichtel.php" ]; then
+  rm -f "$APP_DIR/index.php"
+fi
+
+echo "→ Ersetze Programmdateien (data und config.php bleiben unverändert) …"
+shopt -s dotglob
+for item in "$SRC"/*; do
+  name="$(basename "$item")"
+  case "$name" in
+    data|config.php) continue ;;
+  esac
+  rm -rf "${APP_DIR:?}/$name"
+  cp -R "$item" "$APP_DIR/$name"
 done
 
-echo "→ Installiere Abhängigkeiten …"
-npm install --omit=dev --no-audit --no-fund --loglevel=error
+mkdir -p "$APP_DIR/data"
+for f in .htaccess index.html; do
+  [ -e "$APP_DIR/data/$f" ] || cp "$SRC/data/$f" "$APP_DIR/data/$f"
+done
 
 echo ""
-echo "✓ Fertig! Jetzt das Tool neu starten (Infomaniak-Manager → „Neu starten“)."
+echo "✓ Fertig! Das Wichtel-Tool ist auf dem neuesten Stand."
