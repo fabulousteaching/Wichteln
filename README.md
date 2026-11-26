@@ -52,7 +52,7 @@ Das Tool ist eine ganz normale **PHP-Website** (PHP 8). Es braucht **keine Daten
 2. Im Manager dein Webhosting öffnen → links **FTP / SSH** → **Web FTP**.
 3. In den Ordner **`sites/wichteln.deinedomain.ch`** wechseln. Liegt dort schon eine `index.html` von Infomaniak, diese löschen.
 4. Die ZIP-Datei in den Ordner ziehen (hochladen), dann **Rechtsklick → Entpacken** und die ZIP-Datei danach löschen.
-5. Kontrolle: Direkt im Ordner müssen jetzt u. a. `index.html`, `api.php`, `.htaccess` sowie die Ordner `js`, `css`, `lib` und `data` liegen (nicht in einem Unterordner).
+5. Kontrolle: Direkt im Ordner müssen jetzt u. a. `index.html`, `api.php`, `.htaccess` sowie die Ordner `js`, `css`, `wichtel-app` und `data` liegen (nicht in einem Unterordner).
 6. `https://wichteln.deinedomain.ch` öffnen. Fertig! 🎄
 
 **So bekommst du die ZIP-Datei:** Wer Git und Node.js hat, führt `npm run zip` aus (die Datei landet in `dist/`). Ohne das: auf GitHub *Code → Download ZIP*, entpacken, den Ordner **`web`** öffnen, alles darin markieren → „In ZIP-Datei komprimieren“.
@@ -80,10 +80,12 @@ Ohne SSH aktualisierst du per ZIP wie oben, lässt dabei aber den Ordner `data` 
 Ist das einmal eingerichtet, kommt jede Änderung auf `main` nach etwa einer Minute von selbst auf die Website. Vorher laufen die Tests; schlagen sie fehl, wird nichts hochgeladen. Gespeicherte Wichtelrunden (`data`) und `config.php` auf dem Server werden nie angefasst.
 
 **1. FTP-Zugang bei Infomaniak**
-1. Im Manager dein Webhosting öffnen → links **FTP / SSH**.
-2. Dort steht die **FTP-Serveradresse** (z. B. `xxxx.ftp.infomaniak.com`).
-3. Ein **neues FTP-Konto** anlegen, z. B. `wichteln-github`, mit einem langen Passwort. Benutzername und Passwort notieren.
-   Tipp: Wenn du das Konto auf den Ordner `sites/wichteln.deinedomain.ch` beschränken kannst, ist das noch sicherer. Dann zusätzlich die Variable `FTP_DIR` mit dem Wert `./` anlegen (siehe unten).
+1. Im Manager dein Webhosting öffnen → links **FTP / SSH**. Oben bei **Apache | PHP** steht die **FTP-Serveradresse** (z. B. `xxxx.ftp.infomaniak.com`).
+2. **Benutzer hinzufügen** klicken: Umgebung **Apache | PHP**, ein Name (z. B. `wichteln`) und ein langes Passwort.
+3. Als **Zielverzeichnis** den Ordner der Website wählen: `/sites/wichteln.deinedomain.ch`. **SSH ausgeschaltet** lassen.
+4. Bestätigen. Den vollständigen Benutzernamen, wie er danach in der Liste steht (z. B. `450tvc_wichteln`), und das Passwort notieren.
+
+Bitte **nicht** das Hauptkonto mit Zielverzeichnis `/` verwenden: Es hat Zugriff auf alle deine Websites.
 
 **2. Zugangsdaten auf GitHub hinterlegen**
 1. Auf GitHub im Repository **Settings → Secrets and variables → Actions** öffnen.
@@ -91,7 +93,7 @@ Ist das einmal eingerichtet, kommt jede Änderung auf `main` nach etwa einer Min
    - `FTP_SERVER`: die Serveradresse aus Schritt 1
    - `FTP_USERNAME`: der FTP-Benutzername
    - `FTP_PASSWORD`: das FTP-Passwort
-3. Nur falls deine Website **nicht** `wichteln.fabulousteaching.ch` heisst: unter **Variables** eine Variable `FTP_DIR` anlegen, z. B. `sites/wichteln.deinedomain.ch/`.
+3. Nur falls dein FTP-Konto **nicht** auf den Ordner der Website beschränkt ist: unter **Variables** eine Variable `FTP_DIR` mit dem Ordner der Website anlegen, z. B. `sites/wichteln.deinedomain.ch/`.
 
 **3. Ausprobieren**
 Auf GitHub **Actions → Website veröffentlichen → Run workflow** klicken. Nach etwa einer Minute erscheint ein grüner Haken ✅. Bei einem roten Kreuz auf den Lauf klicken und die Meldung lesen (oder mir schicken).
@@ -120,7 +122,7 @@ Kopiere `config.example.php` auf dem Server zu **`config.php`** und passe die We
 
 ## Technik
 
-- `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `lib/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `lib` und `data`.
+- `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `wichtel-app/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `wichtel-app` und `data`. (Der Ordner heisst nicht `lib`, weil Infomaniak diesen Namen in Website-Ordnern selbst belegt.)
 - Beamer und Tablets fragen alle 2–3 Sekunden mit einer winzigen Anfrage nach, ob sich etwas geändert hat (`/api/rounds/CODE/version`).
 - Alle Bilder (Wichtel, Geschenke, Tannenbaum, Lichterkette) sind selbst gezeichnete SVGs, die Klänge werden im Browser erzeugt, der QR-Code ebenfalls ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT). Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
 - **Entwicklung** (braucht PHP und Node.js): `npm run dev` startet `http://localhost:8000`, `npm test` prüft Schnittstelle und Auslosung gegen den eingebauten PHP-Server.

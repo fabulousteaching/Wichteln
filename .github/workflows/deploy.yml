@@ -5,8 +5,9 @@
 #              FTP_USERNAME  FTP-Benutzername von Infomaniak
 #              FTP_PASSWORD  FTP-Passwort
 #   Variable (optional):
-#              FTP_DIR       Ordner der Website auf dem FTP-Server,
-#                            Standard: sites/wichteln.fabulousteaching.ch/
+#              FTP_DIR       Ordner der Website auf dem FTP-Server.
+#                            Standard: ./ (das FTP-Konto ist auf den Ordner der Website beschränkt).
+#                            Bei einem Konto mit Zugriff auf alles: sites/wichteln.deinedomain.ch/
 #              FTP_PROTOCOL  ftps (Standard) oder ftp
 #
 # Hochgeladen wird nur der Inhalt von web/. Gespeicherte Wichtelrunden (data/)
@@ -57,7 +58,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
           local-dir: ./web/
-          server-dir: ${{ vars.FTP_DIR || 'sites/wichteln.fabulousteaching.ch/' }}
+          server-dir: ${{ vars.FTP_DIR || './' }}
           exclude: |
             **/.git*
             **/.git*/**

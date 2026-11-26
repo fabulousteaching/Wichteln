@@ -243,7 +243,7 @@ test('Seiten sind erreichbar, interne Ordner nicht', async (t) => {
     assert.equal(res.status, 200, url);
     assert.match(res.headers.get('content-type'), /text\/html/);
   }
-  for (const url of ['/lib/wichtel.php', `/data/rounds/${code}.json.php`]) {
+  for (const url of ['/wichtel-app/wichtel.php', `/data/rounds/${code}.json.php`]) {
     assert.equal((await fetch(base + url)).status, 403, url);
   }
   assert.equal((await call('GET', '/api/rounds/XXXXX/version')).status, 404);
