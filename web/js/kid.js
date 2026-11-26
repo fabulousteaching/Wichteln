@@ -201,8 +201,9 @@ async function loadNames() {
     .map((c, i) => {
       const mine = !!claims.tokens[c.id];
       const taken = c.taken && !mine;
-      const note = mine ? '⭐ auf diesem Tablet' : taken ? '🔒 schon gewählt' : '';
-      return `<button type="button" class="tag ${taken ? 'taken' : ''} ${mine ? 'mine' : ''}" data-id="${c.id}" style="animation-delay:${Math.min(i * 35, 900)}ms">
+      const away = c.absent && !mine && !taken;
+      const note = mine ? '⭐ auf diesem Tablet' : taken ? '🔒 schon gewählt' : away ? '🤒 heute abwesend' : '';
+      return `<button type="button" class="tag ${taken ? 'taken' : ''} ${mine ? 'mine' : ''} ${away ? 'absent' : ''}" data-id="${c.id}" style="animation-delay:${Math.min(i * 35, 900)}ms">
         ${esc(c.name)}${note ? `<span class="tag-note">${note}</span>` : ''}</button>`;
     })
     .join('');
@@ -231,7 +232,12 @@ async function pickName(id) {
     toast(`„${child.name}“ wurde schon auf einem anderen Tablet gewählt. Bist du das? Dann frag deine Lehrperson.`, { type: 'error', ms: 5000 });
     return;
   }
-  const ok = await ask({ title: `Bist du ${child.name}?`, text: 'Dann geht es gleich los mit deinem Wunschzettel!', ok: 'Ja, das bin ich! 🙋', cancel: 'Nein' });
+  const ok = await ask({
+    title: `Bist du ${child.name}?`,
+    text: child.absent ? `${child.name} ist heute als abwesend eingetragen. Tippe nur auf „Ja“, wenn du wirklich ${child.name} bist!` : 'Dann geht es gleich los mit deinem Wunschzettel!',
+    ok: 'Ja, das bin ich! 🙋',
+    cancel: 'Nein',
+  });
   if (!ok) return;
   try {
     const res = await api('POST', `/api/rounds/${code}/kids/${id}/claim`, { body: {} });

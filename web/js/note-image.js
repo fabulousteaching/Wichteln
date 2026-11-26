@@ -12,7 +12,8 @@ const PAD = 70;
 const TEXT_W = PAPER_W - PAD * 2;
 
 /**
- * @param {{ name: string, wishes: string, nogos: string, hint?: string, title?: string }} note
+ * @param {{ name: string, wishes: string, nogos: string, hint?: string, title?: string, giver?: string }} note
+ *   giver: Name des Kindes, das wichtelt (für Zettel, die die Lehrperson weitergibt)
  * @returns {Promise<Blob>}
  */
 export async function renderNoteImage(note) {
@@ -31,7 +32,14 @@ export async function renderNoteImage(note) {
   };
 
   add({ type: 'secret', h: 56 });
-  add({ type: 'for', h: 64 });
+  const forText = note.giver ? `${note.giver}, du wichtelst für` : 'Ich wichtle für';
+  let forSize = 50;
+  measure.font = `400 ${forSize}px ${FONT_HAND}`;
+  while (measure.measureText(forText).width > TEXT_W && forSize > 30) {
+    forSize -= 2;
+    measure.font = `400 ${forSize}px ${FONT_HAND}`;
+  }
+  add({ type: 'for', h: 64, text: forText, size: forSize });
 
   let nameSize = 140;
   measure.font = `700 ${nameSize}px ${FONT_TITLE}`;
@@ -157,10 +165,10 @@ export async function renderNoteImage(note) {
         ctx.fillText('🤫 Psst … streng geheim!', W / 2, by + 36);
         break;
       case 'for':
-        ctx.font = `400 50px ${FONT_HAND}`;
+        ctx.font = `400 ${b.size}px ${FONT_HAND}`;
         ctx.fillStyle = '#3b2a1a';
         ctx.textAlign = 'center';
-        ctx.fillText('Ich wichtle für', W / 2, by + 48);
+        ctx.fillText(b.text, W / 2, by + 48);
         break;
       case 'name':
         ctx.font = `700 ${b.size}px ${FONT_TITLE}`;

@@ -388,6 +388,9 @@ body.teacher { overflow: hidden; height: 100vh; height: 100dvh; }
 .slot.writing .sign-status { animation: pencil 1s ease-in-out infinite; }
 @keyframes pencil { 0%, 100% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-4px, 2px) rotate(-8deg); } 50% { transform: translate(2px, -1px) rotate(5deg); } 75% { transform: translate(-2px, 3px) rotate(-4deg); } }
 .slot.open .sign { filter: saturate(.6) brightness(.85); }
+.sign-absent { display: none; position: absolute; left: -14px; top: -16px; font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35)); }
+.slot.is-absent .sign-absent { display: block; }
+.stage-absent-btn { display: block; margin: 18px auto 0; font-size: 22px; padding: 14px 26px; }
 .slot-gift { position: absolute; left: -14px; bottom: -8px; width: 84px; height: 84px; }
 .slot-gift.drop { animation: gift-drop .9s cubic-bezier(.3, 0, .4, 1) both; }
 @keyframes gift-drop {
@@ -437,6 +440,15 @@ body.teacher { overflow: hidden; height: 100vh; height: 100dvh; }
 .chip-writing { background: #fff1c4; color: #7a5a00; }
 .chip-done { background: #d6f3df; color: #17603a; }
 .chip-revealed { background: #dbe9ff; color: #1f4f8f; }
+.chip-absent { background: #ffe1d6; color: #9a3a1c; }
+.icon-btn.on { background: #ffcdb8; box-shadow: inset 0 0 0 2px #e2764f; }
+.kid-row { flex-wrap: wrap; }
+.absent-list { display: grid; gap: 8px; margin: 0 0 1rem; max-height: 46vh; overflow-y: auto; }
+.absent-item { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 14px; padding: .7rem .9rem; font-weight: 600; font-size: 1.1rem; cursor: pointer; box-shadow: 0 2px 0 rgba(0, 0, 0, .06); }
+.absent-item input { width: 26px; height: 26px; accent-color: var(--red); flex: none; }
+.absent-item em { margin-left: auto; font-style: normal; font-weight: 400; font-size: .9rem; opacity: 0; transition: opacity .15s; }
+.absent-item input:checked ~ em { opacity: .85; }
+.absent-downloads { display: flex; flex-wrap: wrap; gap: 8px; margin-top: .6rem; }
 .icon-btn { border: 0; background: #f4ecdb; border-radius: 10px; padding: .35em .5em; cursor: pointer; font-size: .95rem; }
 .icon-btn:hover { background: #eadcbf; }
 .link-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -482,6 +494,7 @@ body.kid { min-height: 100dvh; }
 .tag:active { transform: scale(.97); }
 .tag.taken { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
 .tag.mine { box-shadow: inset 0 0 0 4px var(--gold); }
+.tag.absent { opacity: .6; }
 .tag .tag-note { display: block; font-size: .85rem; font-weight: 400; margin-top: 4px; opacity: .8; }
 @keyframes tag-in { from { opacity: 0; transform: translateY(20px) scale(.9); } }
 
