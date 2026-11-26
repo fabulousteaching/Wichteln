@@ -1,7 +1,8 @@
 // Wichtelkarten für die Lehrperson: pro Kind ein Blatt (doppelseitig drucken).
 // Vorderseite: Name des Kindes, das wichtelt. Rückseite: geheim, für wen es wichtelt.
 
-import { elfSvg, hollySvg, giftSvg } from './art.js';
+import { hollySvg, giftSvg } from './art.js';
+import { elfSvg } from './elf.js';
 import { lines } from './common.js';
 import { FONT_UI, FONT_HAND, FONT_TITLE, loadFonts, svgImage, wrap, roundRect } from './canvas-kit.js';
 import { imagesToPdf } from './pdf.js';

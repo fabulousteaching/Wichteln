@@ -1,5 +1,7 @@
 import { $, esc, api, storage, startSnow, toast, ask } from './common.js';
-import { elfSvg, hillsSvg, mountGarland, mountStars } from './art.js';
+import { hillsSvg, mountGarland, mountStars } from './art.js';
+import { elfSvg } from './elf.js';
+import { startSky } from './sky.js';
 
 function countNames() {
   const names = $('#names')
@@ -28,13 +30,11 @@ async function init() {
   mountStars($('#stars'));
   mountGarland($('#garland'));
   startSnow($('#snow'), { density: 0.8 });
+  startSky();
   $('#ground').innerHTML = hillsSvg({ fit: 'slice' });
   $('#heroElves').innerHTML = [0, 1, 3, 2, 5]
-    .map((v, i) => `<div class="elf hopping" style="animation-delay:${i * 0.12}s">${elfSvg(v)}</div>`)
+    .map((v, i) => `<div class="elf hopping${i % 2 ? ' happy' : ''}" style="--hop:-${(i * 0.14).toFixed(2)}s">${elfSvg(v)}</div>`)
     .join('');
-  document.querySelectorAll('#heroElves .elf').forEach((el, i) => {
-    el.querySelector('svg').style.animationDelay = `${i * 0.13}s`;
-  });
 
   renderRounds();
   $('#names').addEventListener('input', countNames);

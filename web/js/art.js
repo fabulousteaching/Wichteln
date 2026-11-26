@@ -1,15 +1,4 @@
-// Alle Zeichnungen (Wichtel, Geschenke, Tannenbaum, Lichterkette …) als SVG.
-
-export const ELF_VARIANTS = [
-  { hat: '#c8323f', hatDark: '#8f1f2a', tunic: '#3f8a55', tunicDark: '#2b6440', placket: '#f1e6d2', scarf: '#d9a63c', scarfDark: '#a87a22', hair: '#5a3a22', skin: '#f2c4a0', skinDark: '#d99c76', pants: '#8a5a36', sock: '#e9d9b8', boot: '#6e4326', eyes: '#3b2716' },
-  { hat: '#3f8a55', hatDark: '#2b6440', tunic: '#c8323f', tunicDark: '#8f1f2a', placket: '#f1e6d2', scarf: '#f1e6d2', scarfDark: '#c9b99c', hair: '#d9a441', braids: true, skin: '#f0c19c', skinDark: '#d69873', pants: '#5b6c8c', sock: '#c8323f', boot: '#7a4a2a', eyes: '#2f5d3a' },
-  { hat: '#2f5fa7', hatDark: '#1f417a', tunic: '#e0a33a', tunicDark: '#b47b1e', placket: '#f6ecdb', scarf: '#c8323f', scarfDark: '#8f1f2a', hair: '#2a1c14', skin: '#d79f78', skinDark: '#b77c56', pants: '#6d4a30', sock: '#2f5fa7', boot: '#553220', eyes: '#2a1a10' },
-  { hat: '#e0a33a', hatDark: '#b47b1e', tunic: '#2f5fa7', tunicDark: '#1f417a', placket: '#f1e6d2', scarf: '#3f8a55', scarfDark: '#2b6440', hair: '#3a2416', braids: true, skin: '#c48a62', skinDark: '#a26a44', pants: '#8a5a36', sock: '#e9d9b8', boot: '#6e4326', eyes: '#3b2716' },
-  { hat: '#c8323f', hatDark: '#8f1f2a', tunic: '#7a5a3a', tunicDark: '#57402a', placket: '#efe2cc', scarf: '#3f8a55', scarfDark: '#2b6440', hair: '#1c1410', skin: '#8f5d3e', skinDark: '#734a30', pants: '#4a5a72', sock: '#c8323f', boot: '#4a2c1a', eyes: '#1c120c' },
-  { hat: '#7b4fa0', hatDark: '#583875', tunic: '#3f8a55', tunicDark: '#2b6440', placket: '#f1e6d2', scarf: '#e0a33a', scarfDark: '#b47b1e', hair: '#b4582c', braids: true, skin: '#f4caa8', skinDark: '#dba27e', pants: '#7a5232', sock: '#7b4fa0', boot: '#6e4326', eyes: '#2f5d3a' },
-  { hat: '#3f8a55', hatDark: '#2b6440', tunic: '#2f5fa7', tunicDark: '#1f417a', placket: '#f1e6d2', scarf: '#c8323f', scarfDark: '#8f1f2a', hair: '#6b4428', skin: '#e3ad86', skinDark: '#c48862', pants: '#8a5a36', sock: '#e9d9b8', boot: '#5e3820', eyes: '#3b2716' },
-  { hat: '#2f5fa7', hatDark: '#1f417a', tunic: '#c8323f', tunicDark: '#8f1f2a', placket: '#f6ecdb', scarf: '#e0a33a', scarfDark: '#b47b1e', hair: '#241812', braids: true, skin: '#a8714c', skinDark: '#8a5836', pants: '#5b6c8c', sock: '#e0a33a', boot: '#553220', eyes: '#1c120c' },
-];
+// Zeichnungen als SVG: Geschenke, Tannenbaum, Lichterkette, Landschaft … (Die Wichtel stehen in elf.js.)
 
 export const GIFT_VARIANTS = [
   { box: '#d7263d', shade: '#a3172b', ribbon: '#f2c14e', ribbonShade: '#c8922a' },
@@ -78,148 +67,11 @@ export function giftSvg(variantIndex = 0, { part = 'all', className = '' } = {})
   return `<svg class="gift-svg ${className}" viewBox="0 0 100 100" aria-hidden="true">${giftDefs(v, id)}${body}${lid}</svg>`;
 }
 
-function giftGroup(variantIndex) {
+/** Geschenk als SVG-Gruppe (ohne <svg>-Hülle), z. B. zum Einbetten in andere Zeichnungen. */
+export function giftMarkup(variantIndex) {
   const v = pick(GIFT_VARIANTS, variantIndex);
   const id = nextId('g');
   return `${giftDefs(v, id)}${giftBodyMarkup(v, id)}${giftLidMarkup(v, id)}`;
-}
-
-// ---------------------------------------------------------------------------
-// Wichtel (viewBox 0 0 120 170, Füsse bei y≈166)
-// Handgemacht: Filzgesicht mit Kulleraugen, gestrickte Zipfelmütze, Strickjacke, Schal
-// ---------------------------------------------------------------------------
-
-export function elfSvg(variantIndex = 0, { giftVariant = null } = {}) {
-  const v = pick(ELF_VARIANTS, variantIndex);
-  const id = nextId('e');
-  const stitch = 'stroke="#fff8ec" stroke-opacity=".75" stroke-width=".9" stroke-dasharray="1.6 1.4" fill="none" stroke-linecap="round"';
-
-  const braids = v.braids
-    ? `<path d="M31 92 C26 102 28 114 25 124" stroke="${v.hair}" stroke-width="7.5" stroke-linecap="round" fill="none"/>
-       <path d="M89 92 C94 102 92 114 95 124" stroke="${v.hair}" stroke-width="7.5" stroke-linecap="round" fill="none"/>
-       <path d="M27 100 l5 2 M27 107 l5 2 M26 114 l5 2 M93 100 l-5 2 M93 107 l-5 2 M94 114 l-5 2" stroke="#000" stroke-opacity=".2" stroke-width="1.6" stroke-linecap="round"/>
-       <circle cx="25" cy="126" r="3.6" fill="${v.scarf}"/><circle cx="95" cy="126" r="3.6" fill="${v.scarf}"/>`
-    : '';
-
-  const legs = (side) => {
-    const l = side === 'l';
-    const x = l ? 48 : 62;
-    const toe = l ? `M${x - 2} 155 h12 a3.5 3.5 0 0 1 3.5 3.5 v4 a3.5 3.5 0 0 1 -3.5 3.5 h-13 c-6 0 -8 -2.5 -8 -5.5 c0 -3.5 4 -5.5 9 -5.5z`
-                  : `M${x + 12} 155 h-12 a3.5 3.5 0 0 0 -3.5 3.5 v4 a3.5 3.5 0 0 0 3.5 3.5 h13 c6 0 8 -2.5 8 -5.5 c0 -3.5 -4 -5.5 -9 -5.5z`;
-    return `<g class="elf-leg elf-leg-${side}">
-      <rect x="${x}" y="140" width="10" height="17" rx="4" fill="${v.sock}"/>
-      <path d="M${x} 145 h10 M${x} 149 h10 M${x} 153 h10" stroke="#000" stroke-opacity=".1" stroke-width="1.4"/>
-      <path d="${toe}" fill="url(#${id}boot)"/>
-      <path d="M${x + 1} 158.5 h8" ${stitch}/>
-      <path d="M${l ? x - 6 : x + 2} 165 h${l ? 16 : 16}" stroke="#2a180c" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>
-    </g>`;
-  };
-
-  const carry =
-    giftVariant !== null
-      ? `<g class="elf-carry"><g transform="translate(28 99) scale(.64)">${giftGroup(giftVariant)}</g></g>
-         <g class="elf-arms-carry">
-           <path d="M38 121 C32 126 30 131 30 136" stroke="url(#${id}sleeve)" stroke-width="10" stroke-linecap="round" fill="none"/>
-           <path d="M82 121 C88 126 90 131 90 136" stroke="url(#${id}sleeve)" stroke-width="10" stroke-linecap="round" fill="none"/>
-           <circle cx="30" cy="138" r="5.6" fill="url(#${id}hand)"/><circle cx="90" cy="138" r="5.6" fill="url(#${id}hand)"/>
-         </g>`
-      : '';
-
-  return `<svg class="elf-svg" viewBox="0 0 120 170" aria-hidden="true">
-    <defs>
-      <radialGradient id="${id}face" cx=".45" cy=".55" r=".65">
-        <stop offset="0" stop-color="${v.skin}"/><stop offset=".6" stop-color="${v.skin}"/><stop offset="1" stop-color="${v.skinDark}"/>
-      </radialGradient>
-      <radialGradient id="${id}hand" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="${v.skin}"/><stop offset="1" stop-color="${v.skinDark}"/></radialGradient>
-      <radialGradient id="${id}nose" cx=".38" cy=".32" r=".75">
-        <stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".3" stop-color="${v.skin}"/><stop offset="1" stop-color="${v.skinDark}"/>
-      </radialGradient>
-      <linearGradient id="${id}hat" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="${v.hatDark}"/><stop offset=".35" stop-color="${v.hat}"/><stop offset=".7" stop-color="${v.hat}"/><stop offset="1" stop-color="${v.hatDark}"/>
-      </linearGradient>
-      <linearGradient id="${id}body" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="${v.tunicDark}"/><stop offset=".3" stop-color="${v.tunic}"/><stop offset=".7" stop-color="${v.tunic}"/><stop offset="1" stop-color="${v.tunicDark}"/>
-      </linearGradient>
-      <linearGradient id="${id}sleeve" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${v.tunic}"/><stop offset="1" stop-color="${v.tunicDark}"/></linearGradient>
-      <linearGradient id="${id}boot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${v.boot}"/><stop offset="1" stop-color="#2e1a0e"/></linearGradient>
-      <radialGradient id="${id}pom" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e4dccd"/></radialGradient>
-      <pattern id="${id}knit" width="5" height="4.4" patternUnits="userSpaceOnUse">
-        <path d="M0 .4 L2.5 3.6 L5 .4" stroke="#000" stroke-opacity=".16" stroke-width=".9" fill="none"/>
-      </pattern>
-      <pattern id="${id}rib" width="3.2" height="10" patternUnits="userSpaceOnUse">
-        <path d="M1.6 0 V10" stroke="#000" stroke-opacity=".2" stroke-width="1.1"/>
-      </pattern>
-    </defs>
-    <ellipse class="elf-shadow" cx="60" cy="166" rx="27" ry="4" fill="#0a1428" opacity=".28"/>
-    ${legs('l')}
-    ${legs('r')}
-    <g class="elf-upper">
-      <g class="elf-arms-free">
-        <g class="elf-arm elf-arm-l">
-          <path d="M40 121 C34 127 32 134 32 141" stroke="url(#${id}sleeve)" stroke-width="10" stroke-linecap="round" fill="none"/>
-          <circle cx="32" cy="143.5" r="5.4" fill="url(#${id}hand)"/>
-        </g>
-        <g class="elf-arm elf-arm-r">
-          <path d="M80 121 C86 127 88 134 88 141" stroke="url(#${id}sleeve)" stroke-width="10" stroke-linecap="round" fill="none"/>
-          <circle cx="88" cy="143.5" r="5.4" fill="url(#${id}hand)"/>
-        </g>
-      </g>
-      <!-- kurze Hose -->
-      <path d="M44 134 h32 l2 10 c-6 2 -11 2 -15 0 l-3 -5 l-3 5 c-4 2 -9 2 -15 0z" fill="${v.pants}"/>
-      <!-- Strickjacke -->
-      <path d="M41 116 C48 111 72 111 79 116 L83 141 C70 146 50 146 37 141Z" fill="url(#${id}body)"/>
-      <path d="M41 116 C48 111 72 111 79 116 L83 141 C70 146 50 146 37 141Z" fill="url(#${id}knit)"/>
-      <path d="M56 113 h8 l1 31 c-3 .6 -7 .6 -10 0z" fill="${v.placket}"/>
-      <path d="M56 113 h8 l1 31 c-3 .6 -7 .6 -10 0z" fill="url(#${id}rib)" opacity=".5"/>
-      <path d="M38.5 139.5 C50 144 70 144 81.5 139.5" ${stitch}/>
-      <circle cx="60.2" cy="126" r="2.6" fill="${v.hat}"/><path d="M58.9 124.7 l2.6 2.6 M61.5 124.7 l-2.6 2.6" stroke="#fff8ec" stroke-width=".8"/>
-      <circle cx="60.4" cy="135" r="2.6" fill="${v.scarf}"/><path d="M59.1 133.7 l2.6 2.6 M61.7 133.7 l-2.6 2.6" stroke="#fff8ec" stroke-width=".8"/>
-      <!-- Schal -->
-      <path d="M38 109 C48 115 72 115 82 109 L82 116 C72 122 48 122 38 116Z" fill="${v.scarf}"/>
-      <path d="M38 109 C48 115 72 115 82 109 L82 116 C72 122 48 122 38 116Z" fill="url(#${id}rib)"/>
-      <path d="M68 116 l7 1 l-2 19 l-7 -1z" fill="${v.scarfDark}"/>
-      <path d="M68 116 l7 1 l-2 19 l-7 -1z" fill="url(#${id}rib)"/>
-      <path d="M66.5 135 l-1 4 M68.5 135.3 l-.6 4 M70.5 135.6 l-.3 4 M72.5 135.9 l0 4" stroke="${v.scarfDark}" stroke-width="1.3" stroke-linecap="round"/>
-      ${braids}
-      <!-- Kopf aus Filz -->
-      <ellipse cx="60" cy="88" rx="30" ry="27" fill="url(#${id}face)"/>
-      <path d="M33 88 C33 96 34 101 37 104 M87 88 C87 96 86 101 83 104" stroke="${v.hair}" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path d="M36 76 C41 82 46 80 50 76 C55 81 62 81 66 76 C70 81 77 82 84 76 L84 72 L36 72Z" fill="${v.hair}"/>
-      <ellipse cx="42" cy="99" rx="5.2" ry="3.2" fill="#ff7b6b" opacity=".32"/>
-      <ellipse cx="78" cy="99" rx="5.2" ry="3.2" fill="#ff7b6b" opacity=".32"/>
-      <!-- Kulleraugen -->
-      <g class="elf-eyes">
-        <ellipse cx="48" cy="89" rx="8.2" ry="9" fill="#fffdf8"/>
-        <ellipse cx="72" cy="89" rx="8.2" ry="9" fill="#fffdf8"/>
-        <ellipse cx="48" cy="89" rx="8.2" ry="9" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1"/>
-        <ellipse cx="72" cy="89" rx="8.2" ry="9" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1"/>
-        <circle cx="50" cy="90" r="5.6" fill="${v.eyes}"/><circle cx="74" cy="90" r="5.6" fill="${v.eyes}"/>
-        <circle cx="50" cy="90" r="3" fill="#0b0705"/><circle cx="74" cy="90" r="3" fill="#0b0705"/>
-        <circle cx="52.2" cy="87.6" r="1.8" fill="#fff"/><circle cx="76.2" cy="87.6" r="1.8" fill="#fff"/>
-        <circle cx="48.4" cy="92.4" r=".9" fill="#fff" opacity=".8"/><circle cx="72.4" cy="92.4" r=".9" fill="#fff" opacity=".8"/>
-      </g>
-      <g class="elf-lid" opacity="0">
-        <ellipse cx="48" cy="89" rx="8.8" ry="9.6" fill="${v.skin}"/><ellipse cx="72" cy="89" rx="8.8" ry="9.6" fill="${v.skin}"/>
-      </g>
-      <!-- Knubbelnase und Lächeln -->
-      <ellipse cx="60.5" cy="100" rx="6" ry="5.4" fill="url(#${id}nose)"/>
-      <path d="M55 107.5 Q60.5 111.5 66 107.5" stroke="#6b3324" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-      <!-- gestrickte Zipfelmütze -->
-      <g class="elf-hat">
-        <path d="M30 76 C30 60 38 44 50 30 C60 18 72 10 86 8 C93 7 98 10 101 15 C95 13 89 14 86 19 C82 26 84 40 87 52 C89 60 90 68 90 76Z" fill="url(#${id}hat)"/>
-        <path d="M30 76 C30 60 38 44 50 30 C60 18 72 10 86 8 C93 7 98 10 101 15 C95 13 89 14 86 19 C82 26 84 40 87 52 C89 60 90 68 90 76Z" fill="url(#${id}knit)"/>
-        <path d="M27 71 C45 65 75 65 93 71 L93 81 C75 76 45 76 27 81Z" fill="${v.hatDark}"/>
-        <path d="M27 71 C45 65 75 65 93 71 L93 81 C75 76 45 76 27 81Z" fill="url(#${id}rib)"/>
-        <path d="M28 79.5 C45 74.5 75 74.5 92 79.5" ${stitch}/>
-        <g class="elf-pom">
-          <circle cx="101" cy="16" r="7.5" fill="url(#${id}pom)"/>
-          <circle cx="96.5" cy="13" r="3.2" fill="#fff"/><circle cx="104.5" cy="12.5" r="3" fill="#f6f1e8"/>
-          <circle cx="105.5" cy="19.5" r="3" fill="#ece4d6"/><circle cx="97.5" cy="20.5" r="2.8" fill="#efe8db"/>
-        </g>
-      </g>
-      ${carry}
-    </g>
-  </svg>`;
 }
 
 // ---------------------------------------------------------------------------

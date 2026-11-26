@@ -1,6 +1,7 @@
 // Zeichnet den Wichtelzettel als PNG-Bild (zum Speichern in der Galerie).
 
-import { elfSvg, hollySvg, giftSvg } from './art.js';
+import { hollySvg, giftSvg } from './art.js';
+import { elfSvg } from './elf.js';
 import { lines } from './common.js';
 import { FONT_UI, FONT_HAND, FONT_TITLE, loadFonts, svgImage, wrap, roundRect, drawRoll } from './canvas-kit.js';
 
