@@ -1,0 +1,67 @@
+# Veröffentlicht das Wichtel-Tool automatisch auf der Website, sobald sich main ändert.
+#
+# Einmalig einrichten (GitHub → Settings → Secrets and variables → Actions):
+#   Secrets:   FTP_SERVER    z. B. xxxx.ftp.infomaniak.com
+#              FTP_USERNAME  FTP-Benutzername von Infomaniak
+#              FTP_PASSWORD  FTP-Passwort
+#   Variable (optional):
+#              FTP_DIR       Ordner der Website auf dem FTP-Server,
+#                            Standard: sites/wichteln.fabulousteaching.ch/
+#              FTP_PROTOCOL  ftps (Standard) oder ftp
+#
+# Hochgeladen wird nur der Inhalt von web/. Gespeicherte Wichtelrunden (data/)
+# und config.php auf dem Server werden nie überschrieben oder gelöscht.
+
+name: Website veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Tests (PHP-Server und Auslosung)
+        run: npm test
+
+      - name: Sind die FTP-Zugangsdaten eingetragen?
+        id: check
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+        run: |
+          if [ -z "$FTP_SERVER" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Noch keine FTP-Zugangsdaten eingetragen – es wurde nichts hochgeladen. Siehe README, Abschnitt 'Automatisch veröffentlichen'."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Auf die Website hochladen
+        if: steps.check.outputs.configured == 'true'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          local-dir: ./web/
+          server-dir: ${{ vars.FTP_DIR || 'sites/wichteln.fabulousteaching.ch/' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            config.php
+            data/rounds/**
+            data/*.json.php
+            data/*.lock
