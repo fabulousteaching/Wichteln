@@ -1,5 +1,7 @@
 import { $, esc, api, ApiError, storage, liveUpdates, startSnow, sparkle, sleep, toast, ask, askText, copyText, reducedMotion } from './common.js';
-import { elfSvg, giftSvg, treeSvg, hillsSvg, pencilSvg, checkSvg, mountGarland, mountStars } from './art.js';
+import { giftSvg, treeSvg, hillsSvg, pencilSvg, checkSvg, mountGarland, mountStars } from './art.js';
+import { elfSvg } from './elf.js';
+import { startSky } from './sky.js';
 import { sound } from './sound.js';
 import { qrSvg } from './qr.js';
 
@@ -68,6 +70,7 @@ async function init() {
   mountStars($('#stars'));
   mountGarland($('#garland'));
   startSnow($('#snow'));
+  startSky();
   $('#ground').innerHTML = hillsSvg({ width: STAGE_W, height: GROUND_H });
   fitStage();
   window.addEventListener('resize', fitStage);
@@ -348,10 +351,14 @@ async function onGo() {
   }
 }
 
+// Grösse der Wichtel am Beamer und ihre Laufspur: Sie laufen etwas vor den Schildern,
+// damit die Namen lesbar bleiben (nur die Mützenspitze streift kurz das Schild).
+const ELF_W = 99;
+const ELF_H = 140;
+const ELF_LANE = 22;
+
 function walk(el, from, to, y, s, duration, delay = 0) {
-  const W = 104;
-  const H = 148;
-  const t = (x) => `translate(${x - W / 2}px, ${y - H}px) scale(${s})`;
+  const t = (x) => `translate(${x - ELF_W / 2}px, ${y - ELF_H}px) scale(${s})`;
   return el.animate([{ transform: t(from) }, { transform: t(to) }], { duration, delay, easing: 'linear', fill: 'forwards' }).finished;
 }
 
@@ -360,44 +367,51 @@ async function elfRun(slot, giftVariant, startDelay, timing, elfIndex) {
   const x0 = dir > 0 ? -90 : STAGE_W + 90;
   const x1 = dir > 0 ? STAGE_W + 90 : -90;
   const xg = slot.x + 28 * slot.s;
-  const pickMs = 700;
+  const y = slot.y + ELF_LANE * slot.s;
+  const pickMs = 760;
   const speed = Math.abs(x1 - x0) / Math.max(1500, timing.cycle - pickMs);
   const d1 = Math.abs(xg - x0) / speed;
   const d2 = Math.abs(x1 - xg) / speed;
 
   const elf = document.createElement('div');
   elf.className = `elf walking${dir < 0 ? ' facing-left' : ''}`;
-  elf.style.transformOrigin = '50% 100%';
-  elf.style.zIndex = String(15 + slot.row * 10);
   elf.innerHTML = elfSvg(elfIndex, { giftVariant });
-  elf.style.transform = `translate(${x0 - 52}px, ${slot.y - 148}px) scale(${slot.s})`;
-  elf.style.position = 'absolute';
-  elf.style.left = '0';
-  elf.style.top = '0';
-  elf.style.width = '104px';
-  elf.style.height = '148px';
+  Object.assign(elf.style, {
+    position: 'absolute',
+    left: '0',
+    top: '0',
+    width: `${ELF_W}px`,
+    height: `${ELF_H}px`,
+    transformOrigin: '50% 100%',
+    zIndex: String(15 + slot.row * 10),
+    transform: `translate(${x0 - ELF_W / 2}px, ${y - ELF_H}px) scale(${slot.s})`,
+  });
   await sleep(startDelay);
   slotsEl.appendChild(elf);
 
-  await walk(elf, x0, xg, slot.y, slot.s, d1);
+  await walk(elf, x0, xg, y, slot.s, d1);
   elf.classList.remove('walking');
   // Bücken, Geschenk aufheben, Hüpfer
-  const W = 104;
-  const H = 148;
-  const at = (dy, sx, sy) => `translate(${xg - W / 2}px, ${slot.y - H + dy}px) scale(${slot.s * sx}, ${slot.s * sy})`;
-  const bend = elf.animate([{ transform: at(0, 1, 1) }, { transform: at(0, 1.08, 0.86) }], { duration: 220, easing: 'ease-out', fill: 'forwards' });
-  await bend.finished;
-  slot.giftEl.hidden = true;
+  const at = (dy, sx, sy) => `translate(${xg - ELF_W / 2}px, ${y - ELF_H + dy}px) scale(${slot.s * sx}, ${slot.s * sy})`;
+  // Das Geschenk wandert in die Hände und schrumpft dabei auf Trage-Grösse – so gibt es keinen Sprung
+  const g = slot.giftEl;
+  g.classList.remove('idle', 'drop');
+  g.animate([{ transform: 'none' }, { transform: `translateY(${8.5 + ELF_LANE}px) scale(.5)` }], { duration: 240, easing: 'ease-in', fill: 'forwards' });
+  elf.classList.add('happy');
+  await elf.animate([{ transform: at(0, 1, 1) }, { transform: at(0, 1.08, 0.88) }], { duration: 240, easing: 'ease-out', fill: 'forwards' }).finished;
+  g.hidden = true;
+  g.getAnimations().forEach((a) => a.cancel());
   elf.classList.add('carrying');
-  const p = toStageViewport(xg, slot.y - 40 * slot.s);
+  const p = toStageViewport(xg, y - 40 * slot.s);
   sparkle(p.x, p.y, { count: 8, spread: 50 * scale + 15 });
   sound.pling();
   await elf.animate(
-    [{ transform: at(0, 1.08, 0.86) }, { transform: at(-26, 0.96, 1.06), offset: 0.45 }, { transform: at(0, 1, 1) }],
-    { duration: pickMs - 220, easing: 'ease-in-out', fill: 'forwards' },
+    [{ transform: at(0, 1.08, 0.88) }, { transform: at(-24, 0.96, 1.06), offset: 0.45 }, { transform: at(0, 1.04, 0.96), offset: 0.85 }, { transform: at(0, 1, 1) }],
+    { duration: pickMs - 240, easing: 'ease-in-out', fill: 'forwards' },
   ).finished;
+  elf.classList.remove('happy');
   elf.classList.add('walking');
-  await walk(elf, xg, x1, slot.y, slot.s, d2);
+  await walk(elf, xg, x1, y, slot.s, d2);
   elf.remove();
 }
 

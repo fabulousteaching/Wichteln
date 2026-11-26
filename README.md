@@ -11,12 +11,12 @@ Die Kinder schreiben ihren **Wunschzettel auf dem Tablet**. Am **Beamer** holen 
 ## So läuft es im Unterricht
 
 1. **Runde erstellen:** Startseite öffnen → Klassenname und Namen der Kinder eintragen (ein Name pro Zeile) → *Wichtelrunde erstellen*. Optional kommt ein **Hinweis für alle** dazu (z. B. „Wichteltag: Freitag, 18. Dezember · max. 5 Franken“). Er steht später auf jedem Zettel.
-2. **Am Beamer zeigen:** Es erscheint eine verschneite Winterlandschaft mit Tannenbaum, Lichterkette und einem **QR-Code**. Für jedes Kind steht ein Namensschild im Schnee.
+2. **Am Beamer zeigen:** Es erscheint eine verschneite Winterlandschaft mit Tannenbaum, Lichterkette und einem **QR-Code**. Für jedes Kind steht ein Namensschild im Schnee. Ab und zu fliegt der Weihnachtsmann mit seinem Schlitten über den Himmel.
 3. **Kinder scannen den QR-Code** mit dem Tablet (oder geben den 5-stelligen Code auf der Startseite ein), tippen auf ihren Namen und bestätigen „Ja, das bin ich!“.
 4. **Wunschzettel schreiben:** Eine Schriftrolle rollt sich auf. Oben steht *Das wünsche ich mir*, unten *Darüber würde ich mich gar nicht freuen*. Alles wird automatisch gespeichert.
 5. **Fertig!** Die Rolle wird zusammengerollt, mit einer Schleife verschnürt, in ein Geschenk gepackt und fliegt davon. Am Beamer fällt das Geschenk beim Namensschild in den Schnee. ✨
 6. Sind alle Zettel eingepackt, pulsiert am Beamer der Knopf **„🎅 Wichtel losschicken!“**. Ein Klick darauf, und ganz viele Wichtel marschieren durchs Bild, holen die Geschenke ab und laufen davon (mit „Jingle Bells“, wenn der Ton an ist).
-7. **Auf den Tablets** kommt danach ein Wichtel mit einem Geschenk hereingelaufen: „Für dich, Lena!“. Das Kind tippt auf das Geschenk, der Deckel springt auf, die Rolle steigt heraus und rollt sich auf: **„Du wichtelst für … Max“** mit allen Wünschen und No-Gos von Max.
+7. **Auf den Tablets** wechselt die Szene danach in eine gemütliche **Holzhütte mit Kaminfeuer**. Ein Wichtel läuft mit einem Geschenk herein, stellt es vor den Kamin und winkt: „Für dich, Lena!“. Das Kind tippt auf das Geschenk, der Deckel springt auf, die Rolle steigt heraus und rollt sich auf: **„Du wichtelst für … Max“** mit allen Wünschen und No-Gos von Max.
 8. Mit **📷 Als Bild speichern** landet der Zettel als Bild in der Galerie (iPad/Android: im Teilen-Menü „Bild sichern“ wählen).
 
 Am Beamer sieht man nur, *dass* die Wichtel unterwegs sind, nie, wer für wen wichtelt. Danach zeigt ein Häkchen am Namensschild, wer seinen Zettel schon geöffnet hat.
@@ -124,5 +124,5 @@ Kopiere `config.example.php` auf dem Server zu **`config.php`** und passe die We
 
 - `web/`: alles, was auf den Server kommt. PHP 8 (`api.php` + `wichtel-app/wichtel.php`), keine Datenbank: eine JSON-Datei pro Runde mit Dateisperre und atomarem Speichern. `.htaccess` leitet `/lehrer/…`, `/k/…` und `/api/…` weiter und sperrt `wichtel-app` und `data`. (Der Ordner heisst nicht `lib`, weil Infomaniak diesen Namen in Website-Ordnern selbst belegt.)
 - Beamer und Tablets fragen alle 2–3 Sekunden mit einer winzigen Anfrage nach, ob sich etwas geändert hat (`/api/rounds/CODE/version`).
-- Alle Bilder (Wichtel, Geschenke, Tannenbaum, Lichterkette) sind selbst gezeichnete SVGs, die Klänge werden im Browser erzeugt, der QR-Code ebenfalls ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT). Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
+- Alle Bilder (Wichtel, Geschenke, Tannenbaum, Schlitten, Hütte mit Kamin) sind selbst gezeichnete SVGs; die Wichtel blinzeln, schauen umher, sprechen und winken per CSS-Animation (`web/js/elf.js`, `sky.js`, `cabin.js`), die Klänge werden im Browser erzeugt, der QR-Code ebenfalls ([qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator), MIT). Schriften: Fredoka, Patrick Hand (SIL OFL) und Mountains of Christmas (Apache 2.0), lokal eingebunden.
 - **Entwicklung** (braucht PHP und Node.js): `npm run dev` startet `http://localhost:8000`, `npm test` prüft Schnittstelle und Auslosung gegen den eingebauten PHP-Server.

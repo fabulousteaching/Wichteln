@@ -1,7 +1,8 @@
 // Wichtelkarten für die Lehrperson: pro Kind ein Blatt (doppelseitig drucken).
 // Vorderseite: Name des Kindes, das wichtelt. Rückseite: geheim, für wen es wichtelt.
 
-import { elfSvg, hollySvg, giftSvg } from './art.js';
+import { hollySvg, giftSvg } from './art.js';
+import { elfSvg } from './elf.js';
 import { lines } from './common.js';
 import { FONT_UI, FONT_HAND, FONT_TITLE, loadFonts, svgImage, wrap, roundRect } from './canvas-kit.js';
 import { imagesToPdf } from './pdf.js';
@@ -109,7 +110,7 @@ function drawFront(ctx, art, { name, title }) {
 
   ctx.textAlign = 'center';
   ctx.font = `400 96px ${FONT_HAND}`;
-  ctx.fillStyle = '#1d3a7a';
+  ctx.fillStyle = '#4a2c17';
   ctx.fillText('Dreh mich um!', W / 2, artTop + 460);
   ctx.font = `600 46px ${FONT_UI}`;
   ctx.fillStyle = '#a3172b';
@@ -219,7 +220,7 @@ function drawBack(ctx, art, data) {
       case 'empty':
         ctx.textAlign = 'left';
         ctx.font = `400 ${b.size}px ${FONT_HAND}`;
-        ctx.fillStyle = 'rgba(29,58,122,.5)';
+        ctx.fillStyle = 'rgba(74,44,23,.5)';
         ctx.fillText(b.text, left + 80 * s, by + b.size);
         break;
       case 'item':
@@ -234,10 +235,10 @@ function drawBack(ctx, art, data) {
           ctx.fillText('✕', left + 14 * s, by + b.size * 0.98);
         }
         ctx.font = `400 ${b.size}px ${FONT_HAND}`;
-        ctx.fillStyle = '#1d3a7a';
+        ctx.fillStyle = '#4a2c17';
         b.lines.forEach((l, i) => ctx.fillText(l, left + 80 * s, by + b.size + i * b.size * 1.2));
         ctx.save();
-        ctx.strokeStyle = 'rgba(70,110,170,.35)';
+        ctx.strokeStyle = 'rgba(120,82,46,.36)';
         ctx.setLineDash([12, 10]);
         ctx.lineWidth = 3;
         ctx.beginPath();

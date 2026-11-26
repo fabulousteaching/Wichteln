@@ -1,6 +1,7 @@
 // Zeichnet den Wichtelzettel als PNG-Bild (zum Speichern in der Galerie).
 
-import { elfSvg, hollySvg, giftSvg } from './art.js';
+import { hollySvg, giftSvg } from './art.js';
+import { elfSvg } from './elf.js';
 import { lines } from './common.js';
 import { FONT_UI, FONT_HAND, FONT_TITLE, loadFonts, svgImage, wrap, roundRect, drawRoll } from './canvas-kit.js';
 
@@ -177,7 +178,7 @@ export async function renderNoteImage(note) {
         break;
       case 'empty':
         ctx.font = `400 40px ${FONT_HAND}`;
-        ctx.fillStyle = 'rgba(29,58,122,.5)';
+        ctx.fillStyle = 'rgba(74,44,23,.5)';
         ctx.textAlign = 'left';
         ctx.fillText(b.text, left + 56, by + 42);
         break;
@@ -193,9 +194,9 @@ export async function renderNoteImage(note) {
           ctx.fillText('✕', left + 10, by + 43);
         }
         ctx.font = `400 42px ${FONT_HAND}`;
-        ctx.fillStyle = '#1d3a7a';
+        ctx.fillStyle = '#4a2c17';
         b.lines.forEach((l, i) => ctx.fillText(l, left + 56, by + 44 + i * 50));
-        ctx.strokeStyle = 'rgba(70,110,170,.3)';
+        ctx.strokeStyle = 'rgba(120,82,46,.36)';
         ctx.setLineDash([8, 8]);
         ctx.lineWidth = 2;
         ctx.beginPath();

@@ -1,5 +1,8 @@
 import { $, $$, esc, lines, api, storage, liveUpdates, startSnow, sparkle, sleep, toast, ask, reducedMotion } from './common.js';
-import { elfSvg, giftSvg, hillsSvg, hollySvg, bowSvg, mountGarland, mountStars } from './art.js';
+import { giftSvg, hillsSvg, hollySvg, bowSvg, mountGarland, mountStars } from './art.js';
+import { elfSvg } from './elf.js';
+import { startSky } from './sky.js';
+import { mountCabin } from './cabin.js';
 import { sound } from './sound.js';
 import { renderNoteImage } from './note-image.js';
 
@@ -32,7 +35,13 @@ function show(name) {
   $('#switchBox').hidden = !['note', 'wait'].includes(name);
 }
 
+/** Draussen im Schnee oder drinnen in der Wichtelhütte am Kamin */
+function setScene(cabin) {
+  document.body.classList.toggle('in-cabin', cabin);
+}
+
 function showError(title, text) {
+  setScene(false);
   $('#errTitle').textContent = title;
   $('#errText').textContent = text;
   show('error');
@@ -53,6 +62,8 @@ async function init() {
   mountStars($('#stars'), 50);
   mountGarland($('#garland'));
   startSnow($('#snow'), { density: 0.7 });
+  mountCabin($('#cabin'));
+  startSky();
   $('#ground').innerHTML = hillsSvg({ fit: 'slice' });
   $$('[data-holly]').forEach((el) => (el.innerHTML = hollySvg()));
   document.addEventListener('pointerdown', () => sound.unlock(), { once: true });
@@ -168,6 +179,7 @@ async function runBusy(fn) {
 let namesData = null;
 
 async function showNames() {
+  setScene(false);
   show('names');
   await loadNames();
 }
@@ -333,6 +345,7 @@ async function showNote() {
     wishes.disabled = nogos.disabled = $('#doneBtn').disabled = false;
     dirty = false;
     $('#saveState').textContent = '';
+    setScene(false);
     show('note');
     window.scrollTo(0, 0);
     autogrow(wishes);
@@ -496,10 +509,12 @@ async function packAnimation() {
 // ---------------------------------------------------------------------------
 
 function showWait(mode) {
+  setScene(mode === 'coming');
   const card = $('#waitCard');
   const key = `${mode}`;
   if (screen === 'wait' && card.dataset.mode === key) return;
   card.dataset.mode = key;
+  card.classList.toggle('compact', mode === 'coming');
   if (mode === 'waiting') {
     card.innerHTML = `
       <div class="wait-gift">${giftSvg(me.me.id)}</div>
@@ -510,10 +525,8 @@ function showWait(mode) {
     $('#reopenBtn').addEventListener('click', reopen);
   } else {
     card.innerHTML = `
-      <div class="wait-gift">${giftSvg(me.me.id + 3)}</div>
       <h2>Die Wichtel sind unterwegs! 👀</h2>
-      <p>Schau an die Wandtafel!</p>
-      <p>Gleich kommt ein Wichtel zu dir<span class="dots"></span></p>`;
+      <p>Schau an die Wandtafel! Gleich kommt ein Wichtel zu dir in die Hütte<span class="dots"></span></p>`;
   }
   show('wait');
 }
@@ -574,6 +587,7 @@ async function openReveal() {
     revealKey = currentRevealKey();
     $('#revealSheet').innerHTML = revealHtml();
     $('#revealActions').hidden = true;
+    setScene(true);
     show('reveal');
     window.scrollTo(0, 0);
     await unroll($('#revealScroll'), 1500);
@@ -593,14 +607,26 @@ function makeBundle() {
 async function playArrival() {
   await runBusy(async () => {
     const name = me.me.name;
+    const wasInCabin = document.body.classList.contains('in-cabin');
     show(null);
     $('#switchBox').hidden = true;
     window.scrollTo(0, 0);
+    setScene(true);
+    if (!wasInCabin && !reducedMotion) await sleep(1100); // erst in die Hütte überblenden
+
     const arrival = $('#arrival');
     arrival.innerHTML = '';
+    arrival.style.zIndex = '';
     arrival.hidden = false;
-
     const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Grösse von Wichtel und Geschenk an den Bildschirm anpassen
+    const k = Math.max(0.6, Math.min(1.15, vw / 760, vh / 860));
+    arrival.style.setProperty('--k', k.toFixed(3));
+    const elfW = 180 * k;
+    const stopX = Math.round(vw / 2 - 88 * k);
+    const giftX = Math.round(vw / 2 + 88 * k);
+
     const elfVariant = Math.floor(Math.random() * 8);
     const giftVariant = Math.floor(Math.random() * 8);
     const elf = document.createElement('div');
@@ -609,18 +635,15 @@ async function playArrival() {
     elf.style.left = '0';
     arrival.appendChild(elf);
 
-    const elfW = 180;
-    const stopX = Math.round(vw / 2 - 85);
-    const giftX = Math.round(vw / 2 + 85);
     sound.jingleBells();
     await elf.animate([{ transform: `translateX(${-elfW}px)` }, { transform: `translateX(${stopX}px)` }], {
-      duration: reducedMotion ? 10 : Math.max(2200, (stopX + elfW) * 4.2),
-      easing: 'cubic-bezier(.25,.1,.5,1)',
+      duration: reducedMotion ? 10 : Math.max(2400, (stopX + elfW) * 4.4),
+      easing: 'cubic-bezier(.3,.2,.5,1)',
       fill: 'forwards',
     }).finished;
     elf.classList.remove('walking');
 
-    // Geschenk abstellen
+    // Geschenk abstellen: Es startet genau dort, wo der Wichtel es getragen hat
     const gift = document.createElement('div');
     gift.className = 'arrival-gift';
     gift.style.left = `${giftX}px`;
@@ -631,9 +654,15 @@ async function playArrival() {
     let isTapped = false;
     tapped.then(() => (isTapped = true));
     elf.classList.remove('carrying');
+    elf.classList.add('talking');
     await gift.animate(
-      [{ transform: `translate(${stopX - giftX}px, -70px) scale(.75)` }, { transform: `translate(${(stopX - giftX) / 2}px, -110px) scale(.9)`, offset: 0.5 }, { transform: 'none' }],
-      { duration: 650, easing: 'ease-in-out' },
+      [
+        { transform: `translate(${stopX - giftX}px, ${28.5 * k - 8}px) scale(.51)` },
+        { transform: `translate(${(stopX - giftX) * 0.45}px, ${-72 * k}px) scale(.82)`, offset: 0.55 },
+        { transform: 'translate(0, 0) scale(1.07, .93)', offset: 0.88 },
+        { transform: 'none' },
+      ],
+      { duration: reducedMotion ? 10 : 720, easing: 'ease-in-out' },
     ).finished;
     sound.pop();
     elf.classList.add('waving');
@@ -644,12 +673,13 @@ async function playArrival() {
     speech.textContent = `Für dich, ${name}! 🎁`;
     const hint = document.createElement('div');
     hint.className = 'tap-hint';
-    hint.style.left = `${giftX}px`;
+    hint.style.left = `${Math.round(giftX + 26 * k)}px`;
     hint.innerHTML = 'Tippe auf<br>das Geschenk! 👇';
     if (!isTapped) {
       arrival.appendChild(speech);
-      await Promise.race([sleep(900), tapped]);
+      await Promise.race([sleep(1500), tapped]);
     }
+    elf.classList.remove('talking');
     if (!isTapped) {
       arrival.appendChild(hint);
       gift.classList.add('wiggle');
@@ -660,6 +690,8 @@ async function playArrival() {
     speech.remove();
     hint.remove();
     gift.classList.remove('wiggle');
+    elf.classList.remove('waving', 'talking');
+    elf.classList.add('happy', 'hopping');
 
     // Deckel fliegt weg, Rolle steigt heraus
     const lid = gift.querySelector('.gift-lid');
@@ -673,10 +705,11 @@ async function playArrival() {
 
     const bundle = makeBundle();
     bundle.style.left = `${giftX}px`;
-    bundle.style.bottom = 'calc(7vh + 60px)';
+    bundle.style.bottom = `calc(7vh + ${Math.round(60 * k)}px)`;
     arrival.insertBefore(bundle, gift);
-    const riseTo = -Math.round(window.innerHeight * 0.3);
-    await bundle.animate([{ transform: 'translateY(40px) scale(.4)' }, { transform: `translateY(${riseTo}px) scale(1)` }], {
+    const riseTo = -Math.round(vh * 0.3);
+    const risen = `translateY(${riseTo}px) scale(${k.toFixed(3)})`;
+    await bundle.animate([{ transform: `translateY(40px) scale(${(0.4 * k).toFixed(3)})` }, { transform: risen }], {
       duration: 1000,
       easing: 'cubic-bezier(.2,.9,.3,1)',
       fill: 'forwards',
@@ -704,22 +737,22 @@ async function playArrival() {
     const from = bundle.getBoundingClientRect();
     const dx = target.left + target.width / 2 - (from.left + from.width / 2);
     const dy = target.top + target.height / 2 - (from.top + from.height / 2);
-    const s = target.width / from.width;
-    const base = `translateY(${riseTo}px)`;
-    await bundle.animate([{ transform: base }, { transform: `translate(${dx}px, ${riseTo + dy}px) scale(${s})` }], {
+    const s = (target.width / from.width) * k;
+    await bundle.animate([{ transform: risen }, { transform: `translate(${dx}px, ${riseTo + dy}px) scale(${s.toFixed(3)})` }], {
       duration: 700,
       easing: 'cubic-bezier(.4,0,.2,1)',
       fill: 'forwards',
     }).finished;
     scrollEl.style.visibility = '';
     bundle.remove();
+    arrival.style.zIndex = '5'; // ab jetzt hinter dem Zettel: Der Wichtel läuft nicht vor dem Papier durch
 
-    // Wichtel winkt und läuft weiter
-    elf.classList.remove('waving');
+    // Wichtel freut sich und läuft weiter
+    elf.classList.remove('happy', 'hopping');
     elf.classList.add('walking');
     gift.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, fill: 'forwards' });
     elf
-      .animate([{ transform: `translateX(${stopX}px)` }, { transform: `translateX(${vw + 40}px)` }], { duration: 2600, easing: 'ease-in', fill: 'forwards' })
+      .animate([{ transform: `translateX(${stopX}px)` }, { transform: `translateX(${vw + elfW}px)` }], { duration: 2600, easing: 'ease-in', fill: 'forwards' })
       .finished.then(() => {
         arrival.hidden = true;
         arrival.innerHTML = '';
