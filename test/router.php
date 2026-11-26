@@ -11,7 +11,7 @@ $page = static function (string $file) use ($root): bool {
     return true;
 };
 
-if (preg_match('#^/(lib|data)(/|$)#', $path)) {
+if (preg_match('#^/(wichtel-app|data|lib)(/|$)#', $path)) {
     http_response_code(403);
     return true;
 }

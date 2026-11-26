@@ -2,7 +2,7 @@
 // Prüft die Auslosung: niemand zieht sich selbst, keine gegenseitigen Paare, ein einziger Kreis.
 declare(strict_types=1);
 define('WICHTEL', true);
-require __DIR__ . '/../web/lib/wichtel.php';
+require __DIR__ . '/../web/wichtel-app/wichtel.php';
 
 function fail(string $msg): never { fwrite(STDERR, $msg . "\n"); exit(1); }
 

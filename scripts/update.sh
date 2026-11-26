@@ -17,7 +17,9 @@ APP_DIR="$(pwd)"
 INSTALL=0
 [ "${1:-}" = "--install" ] && INSTALL=1
 
-if [ ! -f "$APP_DIR/lib/wichtel.php" ] && [ "$INSTALL" -ne 1 ]; then
+installed() { [ -f "$APP_DIR/wichtel-app/wichtel.php" ] || [ -f "$APP_DIR/lib/wichtel.php" ]; }
+
+if ! installed && [ "$INSTALL" -ne 1 ]; then
   echo "✗ Hier liegt (noch) kein Wichtel-Tool ($APP_DIR)."
   echo "  Für eine Erstinstallation den Befehl mit  bash -s -- --install  am Ende ausführen."
   exit 1
@@ -30,13 +32,13 @@ echo "→ Lade die neueste Version herunter …"
 curl -fsSL "https://codeload.github.com/$REPO/tar.gz/refs/heads/$BRANCH" | tar -xz -C "$TMP" --strip-components=1
 
 SRC="$TMP/web"
-if [ ! -f "$SRC/api.php" ] || [ ! -f "$SRC/lib/wichtel.php" ]; then
+if [ ! -f "$SRC/api.php" ] || [ ! -f "$SRC/wichtel-app/wichtel.php" ]; then
   echo "✗ Download unvollständig – nichts wurde verändert."
   exit 1
 fi
 
 # Platzhalter-Startseite von Infomaniak entfernen (nur bei Erstinstallation)
-if [ "$INSTALL" -eq 1 ] && [ ! -f "$APP_DIR/lib/wichtel.php" ]; then
+if [ "$INSTALL" -eq 1 ] && ! installed; then
   rm -f "$APP_DIR/index.php"
 fi
 
