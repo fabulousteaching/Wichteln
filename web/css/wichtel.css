@@ -27,6 +27,7 @@
   --cream: #fff8e7;
   --paper: #fdf4de;
   --ink: #3b2a1a;
+  --hand: #4a2c17; /* Handschrift auf den Zetteln: dunkelbraun */
   --snow: #f5f9ff;
   --font-title: 'Mountains of Christmas', 'Fredoka', cursive;
   --font-ui: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -35,7 +36,12 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* Kein seitliches Scrollen oder Wischen (Handy und Tablet): nur hoch und runter */
+html {
+  -webkit-text-size-adjust: 100%;
+  max-width: 100%; overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
+}
 body {
   margin: 0;
   min-height: 100vh;
@@ -47,7 +53,7 @@ body {
     linear-gradient(180deg, var(--night-1) 0%, var(--night-2) 45%, var(--night-3) 100%);
   background-attachment: fixed;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
+  max-width: 100%; overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none;
 }
 button, input, textarea, select { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
@@ -295,8 +301,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .home-hero { text-align: center; color: #fff; margin-bottom: 36px; }
 .home-hero .festive-title { font-size: clamp(64px, 12vw, 132px); }
 .home-hero p { font-size: 1.3rem; margin: .8rem auto 0; max-width: 640px; opacity: .92; line-height: 1.4; }
-.home-hero .hero-elves { display: flex; justify-content: center; gap: 8px; margin-top: 18px; height: 110px; }
-.home-hero .hero-elves .elf { position: relative; width: 78px; height: 110px; }
+.home-hero .hero-elves { display: flex; justify-content: center; gap: min(8px, 1.5vw); margin-top: 18px; }
+.home-hero .hero-elves .elf { position: relative; width: min(78px, 16vw); height: min(110px, 22.6vw); flex: none; }
 .home-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 26px; align-items: start; }
 @media (max-width: 860px) { .home-grid { grid-template-columns: 1fr; } }
 .name-count { font-weight: 600; color: var(--green-dark); }
@@ -437,7 +443,7 @@ body.teacher { overflow: hidden; height: 100vh; height: 100dvh; }
 .link-row code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #f6efe0; padding: .45em .6em; border-radius: 10px; font-size: .85rem; }
 .warn { background: #fff1c4; border-radius: 12px; padding: .6em .8em; font-size: .9rem; line-height: 1.35; }
 .pairs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.pairs li { background: #fff; border-radius: 12px; padding: .6em .8em; }
+.pairs li { background: #fff; border-radius: 12px; padding: .6em .8em; overflow-wrap: anywhere; }
 .pairs .p-line { font-weight: 600; }
 .pairs .p-details { font-size: .9rem; opacity: .8; margin-top: .3em; white-space: pre-line; }
 
@@ -517,11 +523,11 @@ body.kid { min-height: 100dvh; }
 .note-label .emoji { font-size: 1.5rem; }
 .lined {
   display: block; width: 100%; border: 0; outline: none; resize: none; overflow: hidden;
-  font-family: var(--font-hand); font-size: 28px; line-height: 44px; color: #1d3a7a; padding: 0 6px; min-height: 176px;
-  background: repeating-linear-gradient(180deg, transparent 0 43px, rgba(70, 110, 170, .35) 43px 44px);
+  font-family: var(--font-hand); font-size: 28px; line-height: 44px; color: var(--hand); padding: 0 6px; min-height: 176px;
+  background: repeating-linear-gradient(180deg, transparent 0 43px, rgba(120, 82, 46, .34) 43px 44px);
   background-attachment: local; border-radius: 4px;
 }
-.lined::placeholder { color: rgba(29, 58, 122, .35); }
+.lined::placeholder { color: rgba(74, 44, 23, .4); }
 .lined:focus { background-color: rgba(255, 255, 255, .45); }
 .note-counter { text-align: right; font-size: .85rem; opacity: .55; margin-top: 2px; }
 .note-actions { display: flex; justify-content: center; margin-top: 28px; }
@@ -593,12 +599,12 @@ body.kid { min-height: 100dvh; }
 }
 .reveal-name.shine { animation: name-shine 1.2s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes name-shine { from { transform: scale(.3) rotate(-6deg); opacity: 0; } }
-.wish-list { list-style: none; margin: 0; padding: 0; font-family: var(--font-hand); font-size: 28px; line-height: 1.35; color: #1d3a7a; }
-.wish-list li { position: relative; padding: 4px 0 4px 40px; border-bottom: 1px dashed rgba(70, 110, 170, .3); }
+.wish-list { list-style: none; margin: 0; padding: 0; font-family: var(--font-hand); font-size: 28px; line-height: 1.35; color: var(--hand); }
+.wish-list li { position: relative; padding: 4px 0 4px 40px; border-bottom: 1px dashed rgba(120, 82, 46, .34); overflow-wrap: anywhere; }
 .wish-list li::before { content: '★'; position: absolute; left: 6px; top: 4px; color: var(--gold-dark); font-size: 24px; }
 .wish-list.nogo li::before { content: '✕'; color: var(--red); font-family: var(--font-ui); font-weight: 700; font-size: 22px; top: 7px; }
 .wish-empty { font-family: var(--font-hand); font-size: 24px; opacity: .55; margin: 4px 0; }
-.hint-box { margin-top: 24px; background: rgba(242, 193, 78, .22); border: 2px dashed var(--gold-dark); border-radius: 16px; padding: 12px 16px; font-size: 1.15rem; line-height: 1.4; }
+.hint-box { margin-top: 24px; background: rgba(242, 193, 78, .22); border: 2px dashed var(--gold-dark); border-radius: 16px; padding: 12px 16px; font-size: 1.15rem; line-height: 1.4; overflow-wrap: anywhere; }
 .reveal-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 26px; }
 .reveal-actions .btn { font-size: 1.25rem; padding: .85em 1.6em; }
 
@@ -713,6 +719,7 @@ body.in-cabin .kid-header .festive-title { font-size: clamp(44px, 9vw, 76px); }
 .tag, .arrival-gift { touch-action: manipulation; }
 @media (max-width: 600px) {
   .kid-main { padding-left: 16px; padding-right: 16px; }
+  .scroll-roll { margin-left: -10px; margin-right: -10px; }
   .scroll-holly { width: 58px; top: 10px; }
   .scroll-sheet { padding-top: 58px; }
   .kid-switch { top: auto; bottom: 14px; right: 14px; }
